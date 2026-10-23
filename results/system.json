@@ -1,0 +1,15 @@
+{
+  "cpu": "11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz",
+  "logical_cpus": 8,
+  "cores": 4,
+  "threads_per_core": "2",
+  "l2": "5 MiB (4 instances)",
+  "l3": "8 MiB (1 instance)",
+  "memory_gb": 7.6,
+  "os": "Ubuntu 24.04.5 LTS",
+  "kernel": "6.18.33.2-microsoft-standard-WSL2",
+  "mpi": "mpirun (Open MPI) 4.1.6",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "flags": "-O3 -march=native -std=c++17",
+  "binding": "one rank per physical core (--bind-to core); P > cores uses hyper-threads"
+}

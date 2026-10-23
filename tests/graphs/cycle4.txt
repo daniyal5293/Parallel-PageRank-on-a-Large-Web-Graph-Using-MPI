@@ -1,0 +1,5 @@
+# Directed 4-cycle: by symmetry every node must get PageRank 0.25
+0 1
+1 2
+2 3
+3 0

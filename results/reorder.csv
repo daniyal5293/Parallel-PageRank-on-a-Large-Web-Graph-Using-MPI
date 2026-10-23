@@ -1,0 +1,9 @@
+dataset,order,procs,t_solve_median
+web-Google,natural,1,0.592779975
+web-Google,natural,4,0.345724006
+web-Google,degree,1,0.521492179
+web-Google,degree,4,0.425989975
+soc-LiveJournal1,natural,1,11.191016162
+soc-LiveJournal1,natural,4,6.725453542
+soc-LiveJournal1,degree,1,16.066871379
+soc-LiveJournal1,degree,4,9.70923553

@@ -1,0 +1,10 @@
+# Sparse ids, tabs, a duplicate edge, a self-loop, a dangling vertex (60)
+# and source-only vertices (40, 1000000)
+10	20
+20	30
+30	10
+10	20
+40	10
+50	50
+30	60
+1000000	30

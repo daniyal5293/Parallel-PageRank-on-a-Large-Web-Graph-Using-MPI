@@ -1,0 +1,6 @@
+build/
+data/
+.venv/
+__pycache__/
+*.f64
+tests/tmp/

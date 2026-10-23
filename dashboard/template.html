@@ -1,0 +1,496 @@
+<title>Parallel PageRank Results</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a lab-notebook results sheet. Summary strip, one control bar, then sections that each
+   answer one question, with the exact mpirun command printed under every chart. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #fcfcfb;
+  --ink: #0f1419;
+  --ink-2: #4a5360;
+  --muted: #7d8590;
+  --line: #e1e4e8;
+  --axis: #c3c8cf;
+  --accent: #2a78d6;
+  --accent-wash: rgba(42, 120, 214, 0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --good: #006300;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1114; --surface: #1a1b1e; --ink: #eef0f2; --ink-2: #b9bfc7; --muted: #868d96;
+    --line: #2c2f34; --axis: #3a3e44; --accent: #3987e5; --accent-wash: rgba(57, 135, 229, 0.16);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --good: #0ca30c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1114; --surface: #1a1b1e; --ink: #eef0f2; --ink-2: #b9bfc7; --muted: #868d96;
+  --line: #2c2f34; --axis: #3a3e44; --accent: #3987e5; --accent-wash: rgba(57, 135, 229, 0.16);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --good: #0ca30c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  margin: 0;
+}
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+  display: grid; gap: 28px;
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.05; letter-spacing: -0.01em; }
+h2 { font-size: 22px; }
+h3 { font-size: 16px; font-weight: 500; }
+p { margin: 0; }
+.eyebrow { font-family: var(--font-data); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { color: var(--ink-2); max-width: 68ch; }
+code, .mono { font-family: var(--font-data); font-size: 0.86em; }
+
+header.top { display: grid; gap: 10px; }
+.members { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); font-size: 14px; }
+.members span b { font-weight: 500; color: var(--ink); }
+.machine { font-family: var(--font-data); font-size: 12.5px; color: var(--muted); }
+
+.summary { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.tile { background: var(--surface); padding: 18px 20px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.tile .label { font-size: 13px; color: var(--ink-2); }
+.tile .value { font-family: var(--font-display); font-size: 32px; font-weight: 600; line-height: 1.1; }
+.tile.hero .value { font-size: 56px; color: var(--accent); }
+.tile .note { font-size: 13px; color: var(--muted); }
+.tile .note b { color: var(--good); font-weight: 500; }
+
+.controls { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; padding-block: 10px;
+  border-bottom: 1px solid var(--line); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.control { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.control > span { font-size: 12px; color: var(--muted); font-family: var(--font-data); text-transform: uppercase; letter-spacing: 0.06em; }
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: var(--radius); overflow: hidden; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: 13.5px; background: var(--surface); color: var(--ink-2); border: 0;
+  padding: 6px 12px; cursor: pointer; border-right: 1px solid var(--axis); }
+.seg button:last-child { border-right: 0; }
+.seg button:hover { background: var(--accent-wash); color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg button:focus-visible, .toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+section { display: grid; gap: 14px; }
+.section-head { display: grid; gap: 4px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px 12px;
+  display: grid; gap: 8px; min-width: 0; }
+.panel .sub { font-size: 13px; color: var(--ink-2); }
+.chart { position: relative; height: 290px; }
+.cmd { font-family: var(--font-data); font-size: 11.5px; color: var(--muted); overflow-x: auto; white-space: nowrap;
+  border-top: 1px dashed var(--line); padding-top: 8px; }
+.cmd::before { content: "$ "; color: var(--axis); }
+.finding { border-left: 3px solid var(--accent); padding: 2px 0 2px 12px; color: var(--ink-2); max-width: 80ch; font-size: 14.5px; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 7px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th { font-weight: 500; color: var(--ink-2); font-size: 12.5px; background: var(--surface); position: sticky; top: 0; }
+td { font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child, td.text, th.text { text-align: left; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--accent-wash); }
+.bar-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.bar-cell i { display: block; height: 6px; border-radius: 3px; background: var(--s1); }
+details summary { cursor: pointer; color: var(--ink-2); font-size: 14px; }
+details[open] summary { margin-bottom: 10px; }
+.pchips { display: inline-flex; gap: 6px; }
+footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 14px; }
+
+@media (max-width: 860px) {
+  .summary { grid-template-columns: 1fr 1fr; }
+  .tile.hero { grid-column: 1 / -1; }
+  .grid2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 460px) {
+  .summary { grid-template-columns: 1fr; }
+  .tile.hero .value { font-size: 46px; }
+  .chart { height: 250px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">PDC project · MPI · results</p>
+    <h1>Parallel PageRank on large web graphs</h1>
+    <p class="lede" id="lede"></p>
+    <div class="members">
+      <span><b>Daniyal Ahmed Khan</b> 23K-3039</span>
+      <span><b>Abdul Hadi</b> 23K-3041</span>
+      <span><b>Taha Ali Khan</b> 23K-3005</span>
+      <span><b>Muhammad Tahseen</b> 23K-3040</span>
+    </div>
+    <p class="machine" id="machine"></p>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="controls" role="toolbar" aria-label="Chart filters">
+    <div class="control"><span>Graph</span><div class="seg" id="ctl-dataset"></div></div>
+    <div class="control"><span>Partition</span><div class="seg" id="ctl-partition"></div></div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <h2>Scaling</h2>
+      <p class="lede">Speedup is measured against the separate sequential program (<span class="mono">T_seq / T_p</span>, solve phase).
+        The machine has 4 physical cores, so runs with 6 and 8 processes share cores through hyper-threading.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Speedup by communication strategy</h3>
+        <div class="chart"><canvas id="c-speedup" aria-label="Speedup chart"></canvas></div>
+        <p class="cmd" id="cmd-speedup"></p>
+      </div>
+      <div class="panel">
+        <h3>Parallel efficiency</h3>
+        <div class="chart"><canvas id="c-eff" aria-label="Efficiency chart"></canvas></div>
+        <p class="cmd" id="cmd-eff"></p>
+      </div>
+    </div>
+    <p class="finding" id="finding-scaling"></p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>The machine's own ceiling</h2>
+      <p class="lede">Three simple kernels with a fixed total amount of work, split over P processes like the PageRank runs.
+        They show how far this laptop can scale each kind of work: arithmetic, streaming through memory, and random reads, which is PageRank's access pattern.</p>
+    </div>
+    <div class="panel">
+      <h3>Speedup of simple kernels vs PageRank on <span id="ceiling-ds"></span></h3>
+      <div class="chart"><canvas id="c-ceiling" aria-label="Platform ceiling chart"></canvas></div>
+      <p class="cmd">mpirun -np P platform_probe   # scripts/probe_platform.sh</p>
+    </div>
+    <p class="finding" id="finding-ceiling"></p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Where the time goes</h2>
+      <p class="lede">Average time per process, split into local computation, the rank-exchange collective,
+        and the per-iteration <span class="mono">MPI_Allreduce</span>. The allreduce also absorbs waiting caused by load imbalance.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Time breakdown <span class="sub" id="mode-label"></span></h3>
+        <div class="control"><div class="seg" id="ctl-mode"></div></div>
+        <div class="chart"><canvas id="c-breakdown" aria-label="Time breakdown chart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Data moved per iteration</h3>
+        <p class="sub">The whole contribution vector (allgather) vs only the ghost vertices each process needs (alltoallv).</p>
+        <div class="chart"><canvas id="c-volume" aria-label="Communication volume chart"></canvas></div>
+      </div>
+    </div>
+    <p class="finding" id="finding-comm"></p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Load balance</h2>
+      <p class="lede">Each process owns a contiguous block of vertices. <b>Vertex</b> partitioning gives every process the same number of vertices.
+        <b>Edge</b> partitioning balances <span class="mono">in-edges + 4 × vertices</span>.</p>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Compute time per rank</h3>
+        <div class="control"><span>Processes</span><div class="seg" id="ctl-procs"></div></div>
+        <div class="chart"><canvas id="c-ranks" aria-label="Per-rank compute time chart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Imbalance (slowest / average compute)</h3>
+        <p class="sub">1.0 means perfectly balanced. Communication strategy: alltoallv.</p>
+        <div class="chart"><canvas id="c-imb" aria-label="Imbalance chart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Convergence of the power iteration</h3>
+        <p class="sub">L1 change between iterations, log scale. Stops below 10<sup>−9</sup>.</p>
+        <div class="chart"><canvas id="c-conv" aria-label="Convergence chart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Weak scaling (R-MAT, ~16 M edges per process)</h3>
+        <p class="sub">The graph grows with the process count: rmat-20 at 1 process up to rmat-23 at 8. Flat bars mean perfect weak scaling.</p>
+        <div class="chart"><canvas id="c-weak" aria-label="Weak scaling chart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Highest-ranked nodes</h2>
+      <p class="lede" id="top-lede"></p>
+    </div>
+    <div class="table-wrap"><table id="t-top"></table></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Datasets</h2></div>
+    <div class="table-wrap"><table id="t-data"></table></div>
+  </section>
+
+  <section>
+    <details>
+      <summary>All measurements for the selected graph (median of repeats)</summary>
+      <div class="table-wrap"><table id="t-all"></table></div>
+    </details>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+
+const MODES = ["allgather", "alltoallv", "overlap"];
+const MODE_LABEL = { allgather: "Allgatherv (full vector)", alltoallv: "Alltoallv (ghosts only)", overlap: "Ialltoallv + overlap" };
+const state = { dataset: DATA.datasets.find(d => d.name === "soc-LiveJournal1")?.name || DATA.datasets[0].name,
+                partition: "edge", mode: "alltoallv", procs: 4 };
+try { Object.assign(state, JSON.parse(localStorage.getItem("pr-dash") || "{}")); } catch (e) {}
+const save = () => { try { localStorage.setItem("pr-dash", JSON.stringify(state)); } catch (e) {} };
+
+const $ = id => document.getElementById(id);
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const fmt = (x, d = 2) => (x == null || Number.isNaN(x)) ? "–" : Number(x).toFixed(d);
+const big = x => x >= 1e6 ? (x / 1e6).toFixed(x >= 1e7 ? 0 : 1) + " M" : x >= 1e3 ? (x / 1e3).toFixed(0) + " K" : String(x);
+const comma = x => Number(x).toLocaleString("en-US");
+const rows = (ds, part) => DATA.summary.filter(r => r.dataset === ds && (!part || r.partition === part));
+const ds = () => DATA.datasets.find(d => d.name === state.dataset);
+const allProcs = () => [...new Set(DATA.summary.map(r => r.procs))].sort((a, b) => a - b);
+
+function seg(el, options, key, onChange) {
+  el.innerHTML = "";
+  for (const [value, label] of options) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label; b.id = `${el.id}-${value}`;
+    b.setAttribute("aria-pressed", String(state[key] === value));
+    b.addEventListener("click", () => { state[key] = value; save(); seg(el, options, key, onChange); onChange(); });
+    el.appendChild(b);
+  }
+}
+
+/* ---------- charts ---------- */
+const charts = {};
+function theme() {
+  return { ink: css("--ink"), ink2: css("--ink-2"), muted: css("--muted"), line: css("--line"), axis: css("--axis"),
+           surface: css("--surface"), s: [css("--s1"), css("--s2"), css("--s3"), css("--s4")],
+           font: css("--font-body"), mono: css("--font-data") };
+}
+function baseOptions(t, { x = "MPI processes", y = "", logY = false, stacked = false, yMax, legend = true } = {}) {
+  return {
+    responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: legend, position: "bottom", labels: { color: t.ink2, boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: "rectRounded", font: { family: t.font, size: 12 } } },
+      tooltip: { backgroundColor: t.surface, titleColor: t.ink, bodyColor: t.ink2, borderColor: t.axis, borderWidth: 1,
+                 padding: 10, titleFont: { family: t.font, weight: "600" }, bodyFont: { family: t.mono, size: 12 }, usePointStyle: true },
+    },
+    scales: {
+      x: { stacked, title: { display: !!x, text: x, color: t.muted, font: { family: t.font, size: 12 } },
+           grid: { display: false }, border: { color: t.axis }, ticks: { color: t.ink2, font: { family: t.mono, size: 11 } } },
+      y: { stacked, type: logY ? "logarithmic" : "linear", max: yMax, beginAtZero: !logY,
+           title: { display: !!y, text: y, color: t.muted, font: { family: t.font, size: 12 } },
+           grid: { color: t.line, lineWidth: 1 }, border: { display: false }, ticks: { color: t.ink2, font: { family: t.mono, size: 11 } } },
+    },
+  };
+}
+const lineDs = (t, label, data, color, extra = {}) => ({
+  label, data, borderColor: color, backgroundColor: color, borderWidth: 2, pointRadius: 4, pointHoverRadius: 6,
+  pointBorderColor: t.surface, pointBorderWidth: 2, tension: 0, ...extra });
+const idealDs = (t, procs) => ({ label: "ideal (linear)", data: procs.map(p => p), borderColor: t.muted, borderWidth: 1,
+  borderDash: [4, 3], pointRadius: 0, pointHoverRadius: 0, backgroundColor: t.muted });
+function draw(id, config) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id), config);
+}
+const hwLine = { id: "hw", afterDraw(chart) {
+  const xs = chart.scales.x, i = chart.data.labels.indexOf(4);
+  if (i < 0 || i === chart.data.labels.length - 1) return;
+  const x = (xs.getPixelForValue(i) + xs.getPixelForValue(i + 1)) / 2, { top, bottom } = chart.chartArea, ctx = chart.ctx;
+  ctx.save(); ctx.strokeStyle = css("--axis"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+  ctx.fillStyle = css("--muted"); ctx.font = `11px ${css("--font-data")}`; ctx.fillText("hyper-threads →", x + 4, top + 10); ctx.restore();
+} };
+
+function renderScaling(t) {
+  const procs = allProcs();
+  const series = MODES.map((m, i) => {
+    const r = rows(state.dataset, state.partition).filter(x => x.mode === m);
+    return { m, color: t.s[i], sp: procs.map(p => r.find(x => x.procs === p)?.speedup ?? null),
+             ef: procs.map(p => { const v = r.find(x => x.procs === p)?.efficiency; return v == null ? null : v * 100; }) };
+  });
+  draw("c-speedup", { type: "line", plugins: [hwLine],
+    data: { labels: procs, datasets: [...series.map(s => lineDs(t, MODE_LABEL[s.m], s.sp, s.color)), idealDs(t, procs)] },
+    options: (o => { o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}×` }; return o; })(baseOptions(t, { y: "speedup (×)" })) });
+  draw("c-eff", { type: "line", plugins: [hwLine],
+    data: { labels: procs, datasets: series.map(s => lineDs(t, MODE_LABEL[s.m], s.ef, s.color)) },
+    options: (o => { o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y, 0)}%` }; return o; })(baseOptions(t, { y: "efficiency (%)", yMax: 110 })) });
+  $("cmd-speedup").textContent = `mpirun -np P pagerank_mpi --graph ${state.dataset}.bin --mode {allgather,alltoallv,overlap} --partition ${state.partition}`;
+  $("cmd-eff").textContent = `pagerank_seq --graph ${state.dataset}.bin   # T_seq = ${fmt(DATA.seq[state.dataset]?.t_solve, 2)} s`;
+
+  const best = rows(state.dataset, state.partition).reduce((a, b) => (b.speedup > (a?.speedup ?? 0) ? b : a), null);
+  const at4 = rows(state.dataset, state.partition).filter(r => r.procs === 4).sort((a, b) => b.speedup - a.speedup)[0];
+  $("finding-scaling").innerHTML = best ? `On <b>${state.dataset}</b> the best result is <b>${fmt(best.speedup)}×</b> with ${best.procs} processes (${best.mode}).
+    With 4 processes, one per physical core, the best is ${fmt(at4?.speedup)}× at ${fmt((at4?.efficiency ?? 0) * 100, 0)}% efficiency.
+    PageRank streams the edge list and gathers neighbour ranks at random, so the processes compete for the same memory bandwidth and
+    speedup flattens as cores are added.` : "";
+}
+
+function renderCeiling(t) {
+  const pl = DATA.platform || [];
+  if (!pl.length) return;
+  const procs = pl.map(r => r.procs);
+  const best = procs.map(p => { const r = DATA.summary.filter(x => x.dataset === state.dataset && x.procs === p);
+    return r.length ? Math.max(...r.map(x => x.speedup)) : null; });
+  draw("c-ceiling", { type: "line", plugins: [hwLine],
+    data: { labels: procs, datasets: [
+      lineDs(t, "compute-bound kernel", pl.map(r => r.compute), t.s[0]),
+      lineDs(t, "random-gather kernel", pl.map(r => r.gather), t.s[1]),
+      lineDs(t, "memory-streaming kernel", pl.map(r => r.stream), t.s[2]),
+      lineDs(t, `PageRank, ${state.dataset} (best config)`, best, t.ink2, { borderDash: [5, 3], pointRadius: 3 }),
+      idealDs(t, procs)] },
+    options: (o => { o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}×` }; return o; })(baseOptions(t, { y: "speedup over 1 process" })) });
+  $("ceiling-ds").textContent = state.dataset;
+  const at4 = pl.find(r => r.procs === 4);
+  $("finding-ceiling").innerHTML = at4 ? `With 4 processes, the arithmetic kernel runs <b>${fmt(at4.compute)}×</b> faster and random reads <b>${fmt(at4.gather)}×</b>.
+    Streaming through memory gains only <b>${fmt(at4.stream)}×</b>, because one core already uses the full memory bandwidth (about ${fmt(pl[0].stream_gbs, 0)} GB/s).
+    PageRank streams the whole edge list every iteration, so its speedup ends up between the streaming and random-read curves.` : "";
+}
+
+function renderBreakdown(t) {
+  const procs = allProcs();
+  const r = rows(state.dataset, state.partition).filter(x => x.mode === state.mode);
+  const pick = k => procs.map(p => r.find(x => x.procs === p)?.[k] ?? null);
+  const parts = [["t_compute_avg", "compute"], ["t_exchange_avg", "exchange collective"], ["t_reduce_avg", "allreduce + waiting"]];
+  draw("c-breakdown", { type: "bar",
+    data: { labels: procs, datasets: parts.map(([k, l], i) => ({ label: l, data: pick(k), backgroundColor: t.s[i],
+      borderColor: t.surface, borderWidth: { top: 2 }, borderSkipped: false, maxBarThickness: 28,
+      borderRadius: i === parts.length - 1 ? { topLeft: 4, topRight: 4 } : 0 })) },
+    options: (o => { o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y, 3)} s` }; return o; })(baseOptions(t, { y: "seconds per process", stacked: true })) });
+  $("mode-label").textContent = `· ${MODE_LABEL[state.mode]}`;
+
+  const vol = m => procs.map(p => { const v = rows(state.dataset, state.partition).find(x => x.mode === m && x.procs === p)?.bytes_per_iter; return v == null ? null : v / 1e6; });
+  draw("c-volume", { type: "line",
+    data: { labels: procs, datasets: [lineDs(t, MODE_LABEL.allgather, vol("allgather"), t.s[0]), lineDs(t, MODE_LABEL.alltoallv, vol("alltoallv"), t.s[1])] },
+    options: (o => { o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y, 1)} MB` }; return o; })(baseOptions(t, { y: "MB per iteration (all processes)" })) });
+
+  const a = rows(state.dataset, state.partition).find(x => x.mode === "allgather" && x.procs === 8);
+  const b = rows(state.dataset, state.partition).find(x => x.mode === "alltoallv" && x.procs === 8);
+  $("finding-comm").innerHTML = a && b ? `At 8 processes on ${state.dataset}, sending only ghost values moves <b>${fmt(b.bytes_per_iter / 1e6, 1)} MB</b> per iteration
+    instead of ${fmt(a.bytes_per_iter / 1e6, 1)} MB, a ${fmt(100 * (1 - b.bytes_per_iter / a.bytes_per_iter), 0)}% reduction.
+    All processes share one machine's memory, so the exchange is a memory copy, and its cost is small next to the computation.` : "";
+}
+
+function renderBalance(t) {
+  const key = p => `${state.dataset}|${state.procs}|alltoallv|${p}`;
+  const v = DATA.perRank[key("vertex")], e = DATA.perRank[key("edge")];
+  const n = Math.max(v?.t_compute.length ?? 0, e?.t_compute.length ?? 0);
+  draw("c-ranks", { type: "bar",
+    data: { labels: [...Array(n).keys()].map(i => `rank ${i}`), datasets: [
+      { label: "vertex partition", data: v?.t_compute ?? [], backgroundColor: t.s[0], borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: false, maxBarThickness: 22 },
+      { label: "edge partition", data: e?.t_compute ?? [], backgroundColor: t.s[1], borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: false, maxBarThickness: 22 } ] },
+    options: (o => { o.scales.x.ticks.font.size = 10;
+      o.plugins.tooltip.callbacks = { label: c => { const src = c.datasetIndex ? e : v, i = c.dataIndex;
+        return ` ${c.dataset.label}: ${fmt(c.parsed.y, 3)} s · ${big(src.edges[i])} edges · ${big(src.vertices[i])} vertices`; } }; return o; })(baseOptions(t, { x: "", y: "compute seconds" })) });
+
+  const procs = allProcs().filter(p => p > 1);
+  const imb = part => procs.map(p => rows(state.dataset, part).find(x => x.mode === "alltoallv" && x.procs === p)?.imbalance ?? null);
+  draw("c-imb", { type: "line", plugins: [hwLine],
+    data: { labels: procs, datasets: [lineDs(t, "vertex partition", imb("vertex"), t.s[0]), lineDs(t, "edge partition", imb("edge"), t.s[1])] },
+    options: (o => { o.scales.y.beginAtZero = false; o.scales.y.suggestedMin = 1;
+      o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y, 3)}` }; return o; })(baseOptions(t, { y: "max / avg" })) });
+}
+
+function renderStatic(t) {
+  const names = DATA.datasets.map(d => d.name).filter(n => DATA.convergence[n]);
+  const maxLen = Math.max(...names.map(n => DATA.convergence[n].length));
+  draw("c-conv", { type: "line",
+    data: { labels: [...Array(maxLen).keys()].map(i => i + 1),
+      datasets: names.map((n, i) => lineDs(t, `${n} (${DATA.convergence[n].length} it.)`, DATA.convergence[n], t.s[i % 4], { pointRadius: 0, pointHoverRadius: 4 })) },
+    options: (o => { o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label.split(" ")[0]}: ${Number(c.parsed.y).toExponential(2)}` };
+      o.scales.y.ticks.callback = v => { const l = Math.log10(v); return Number.isInteger(l) ? `1e${l}` : ""; };
+      o.scales.x.ticks.maxTicksLimit = 10; return o; })(baseOptions(t, { x: "iteration", y: "L1 residual", logY: true })) });
+
+  const w = DATA.weak;
+  draw("c-weak", { type: "bar",
+    data: { labels: w.map(r => `${r.procs}p · ${r.dataset}`), datasets: [{ label: "solve time (30 iterations)", data: w.map(r => r.t_solve),
+      backgroundColor: t.s[0], borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: false, maxBarThickness: 36 }] },
+    options: (o => { o.plugins.tooltip.callbacks = { label: c => ` ${fmt(c.parsed.y, 2)} s · efficiency ${fmt(w[c.dataIndex].efficiency * 100, 0)}% · ${big(w[c.dataIndex].m)} edges` };
+      o.scales.x.ticks.font.size = 10; return o; })(baseOptions(t, { x: "", y: "seconds", legend: false })) });
+}
+
+/* ---------- tables & text ---------- */
+function renderTables() {
+  const d = ds(), top = DATA.top[state.dataset] || [];
+  $("top-lede").textContent = `${state.dataset}: the ${top.length} highest PageRank scores (damping 0.85). The sequential and every MPI run produce the same list. Node ids are the dataset's own ids.`;
+  const maxScore = Math.max(...top.map(x => x.score), 1e-12);
+  $("t-top").innerHTML = `<thead><tr><th>#</th><th>node id</th><th>PageRank</th><th>× uniform (1/N)</th></tr></thead><tbody>${
+    top.map((x, i) => `<tr><td>${i + 1}</td><td>${x.orig}</td><td><span class="bar-cell"><i style="width:${(60 * x.score / maxScore).toFixed(1)}px"></i>${x.score.toExponential(4)}</span></td><td>${fmt(x.score * d.n, 0)}×</td></tr>`).join("")}</tbody>`;
+
+  $("t-data").innerHTML = `<thead><tr><th>graph</th><th>vertices</th><th>edges</th><th>avg out-degree</th><th>dangling</th><th>max in-degree</th><th>iterations</th><th>sequential solve</th><th>seq MTEPS</th></tr></thead><tbody>${
+    DATA.datasets.map(x => `<tr><td class="text">${x.name}</td><td>${comma(x.n)}</td><td>${comma(x.m)}</td><td>${fmt(x.m / x.n, 1)}</td><td>${comma(x.dangling)}</td><td>${comma(x.max_in_deg)}</td><td>${x.iterations}</td><td>${fmt(x.t_seq, 2)} s</td><td>${fmt(x.mteps_seq, 0)}</td></tr>`).join("")}</tbody>`;
+
+  const r = rows(state.dataset).slice().sort((a, b) => a.partition.localeCompare(b.partition) || MODES.indexOf(a.mode) - MODES.indexOf(b.mode) || a.procs - b.procs);
+  $("t-all").innerHTML = `<thead><tr><th class="text">partition</th><th class="text">mode</th><th>P</th><th>solve (s)</th><th>± std</th><th>total (s)</th><th>speedup</th><th>efficiency</th><th>Karp–Flatt e</th><th>compute</th><th>exchange</th><th>allreduce</th><th>imbalance</th><th>MB / iter</th><th>MTEPS</th></tr></thead><tbody>${
+    r.map(x => `<tr><td class="text">${x.partition}</td><td class="text">${x.mode}</td><td>${x.procs}</td><td>${fmt(x.t_solve, 3)}</td><td>${fmt(x.t_solve_std, 3)}</td><td>${fmt(x.t_total, 3)}</td><td>${fmt(x.speedup)}×</td><td>${fmt(x.efficiency * 100, 0)}%</td><td>${fmt(x.karp_flatt, 3)}</td><td>${fmt(x.t_compute_avg, 3)}</td><td>${fmt(x.t_exchange_avg, 3)}</td><td>${fmt(x.t_reduce_avg, 3)}</td><td>${fmt(x.imbalance, 3)}</td><td>${fmt(x.bytes_per_iter / 1e6, 1)}</td><td>${fmt(x.mteps, 0)}</td></tr>`).join("")}</tbody>`;
+}
+
+function renderHeader() {
+  const s = DATA.system, big4 = DATA.datasets.reduce((a, b) => (b.m > a.m ? b : a));
+  $("lede").textContent = `Sequential and MPI implementations of PageRank in C++, measured on ${DATA.datasets.length} graphs of up to ${big(big4.m)} edges with 1–8 processes, three communication strategies and two partitioning schemes.`;
+  $("machine").textContent = `${s.cpu} · ${s.cores} cores / ${s.logical_cpus} threads · ${s.memory_gb} GB (WSL2) · ${s.mpi} · ${s.compiler} ${s.flags}`;
+  const bestOf = rs => rs.reduce((a, b) => (b.speedup > (a?.speedup ?? 0) ? b : a), null);
+  const hero = bestOf(DATA.summary), heroDs = DATA.datasets.find(d => d.name === hero?.dataset) || big4;
+  const lj = bestOf(DATA.summary.filter(r => r.dataset === big4.name));
+  const gl = DATA.summary.filter(r => r.procs === 8 && r.partition === "edge");
+  const red = gl.length ? Math.max(...DATA.datasets.map(d => { const a = gl.find(r => r.dataset === d.name && r.mode === "allgather"), b = gl.find(r => r.dataset === d.name && r.mode === "alltoallv"); return a && b ? 1 - b.bytes_per_iter / a.bytes_per_iter : 0; })) : 0;
+  $("summary").innerHTML = `
+    <div class="tile hero"><span class="label">Best speedup: ${heroDs.name} (${big(heroDs.m)} edges)</span>
+      <span class="value">${fmt(hero?.speedup)}×</span>
+      <span class="note">${hero?.procs} processes · ${hero?.mode} · ${fmt(DATA.seq[heroDs.name]?.t_solve, 1)} s → ${fmt(hero?.t_solve, 1)} s.
+        On ${big4.name}, which is limited by memory bandwidth, the best is ${fmt(lj?.speedup)}×.</span></div>
+    <div class="tile"><span class="label">Largest graph</span><span class="value">${big(big4.n)}</span><span class="note">vertices, ${big(big4.m)} edges</span></div>
+    <div class="tile"><span class="label">Less data sent with ghost exchange</span><span class="value">${fmt(red * 100, 0)}%</span><span class="note">best case at 8 processes, vs Allgatherv</span></div>
+    <div class="tile"><span class="label">Correctness checks</span><span class="value">${DATA.tests.passed}/${DATA.tests.total}</span><span class="note"><b>✓ passed</b> · matches networkx to ${DATA.tests.nx_l1}</span></div>`;
+  $("footer").textContent = `Generated ${DATA.generated} from results/summary.csv (median of ${DATA.repeats} runs per configuration). Rebuild with python scripts/build_dashboard.py.`;
+}
+
+function renderAll() {
+  const t = theme();
+  Chart.defaults.font.family = t.font;
+  renderScaling(t); renderCeiling(t); renderBreakdown(t); renderBalance(t); renderStatic(t); renderTables();
+}
+function controls() {
+  seg($("ctl-dataset"), DATA.datasets.map(d => [d.name, d.name]), "dataset", renderAll);
+  seg($("ctl-partition"), [["edge", "edge-balanced"], ["vertex", "vertex-balanced"]], "partition", renderAll);
+  seg($("ctl-mode"), MODES.map(m => [m, m]), "mode", () => renderBreakdown(theme()));
+  seg($("ctl-procs"), allProcs().filter(p => p > 1).map(p => [p, String(p)]), "procs", () => renderBalance(theme()));
+}
+if (!DATA.datasets.some(d => d.name === state.dataset)) state.dataset = DATA.datasets[0].name;
+renderHeader(); controls();
+if (window.Chart) renderAll(); else window.addEventListener("load", renderAll);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>

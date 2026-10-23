@@ -1,0 +1,746 @@
+== correctness tests
+== preparing test graphs
+== sequential vs networkx
+  PASS  seq classic                                      n=4 m=5  L1(ours - networkx) = 1.915e-15
+  PASS  seq cycle4                                       n=4 m=4  L1(ours - networkx) = 0.000e+00
+  PASS  seq mixed                                        n=7 m=7  L1(ours - networkx) = 2.423e-14
+  PASS  seq rmat12                                       n=4096 m=53429  L1(ours - networkx) = 4.531e-13
+  PASS  seq rmat15                                       n=32768 m=468143  L1(ours - networkx) = 7.200e-12
+  PASS  seq star                                         n=6 m=5  L1(ours - networkx) = 2.415e-15
+  PASS  cycle4 uniform 0.25                              max |r-0.25| = 0.0
+== MPI vs sequential (procs: 1 2 3 4 5 8)
+  PASS  classic p=1 allgather/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=1 allgather/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=1 alltoallv/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=1 alltoallv/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=1 overlap/vertex                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=1 overlap/edge                         L1 = 0.000e+00, top-4 match
+  PASS  classic p=2 allgather/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=2 allgather/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=2 alltoallv/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=2 alltoallv/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=2 overlap/vertex                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=2 overlap/edge                         L1 = 0.000e+00, top-4 match
+  PASS  classic p=3 allgather/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=3 allgather/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=3 alltoallv/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=3 alltoallv/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=3 overlap/vertex                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=3 overlap/edge                         L1 = 0.000e+00, top-4 match
+  PASS  classic p=4 allgather/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=4 allgather/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=4 alltoallv/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=4 alltoallv/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=4 overlap/vertex                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=4 overlap/edge                         L1 = 0.000e+00, top-4 match
+  PASS  classic p=5 allgather/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=5 allgather/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=5 alltoallv/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=5 alltoallv/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=5 overlap/vertex                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=5 overlap/edge                         L1 = 0.000e+00, top-4 match
+  PASS  classic p=8 allgather/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=8 allgather/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=8 alltoallv/vertex                     L1 = 0.000e+00, top-4 match
+  PASS  classic p=8 alltoallv/edge                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=8 overlap/vertex                       L1 = 0.000e+00, top-4 match
+  PASS  classic p=8 overlap/edge                         L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=1 allgather/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=1 allgather/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=1 alltoallv/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=1 alltoallv/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=1 overlap/vertex                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=1 overlap/edge                          L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=2 allgather/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=2 allgather/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=2 alltoallv/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=2 alltoallv/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=2 overlap/vertex                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=2 overlap/edge                          L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=3 allgather/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=3 allgather/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=3 alltoallv/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=3 alltoallv/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=3 overlap/vertex                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=3 overlap/edge                          L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=4 allgather/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=4 allgather/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=4 alltoallv/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=4 alltoallv/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=4 overlap/vertex                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=4 overlap/edge                          L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=5 allgather/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=5 allgather/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=5 alltoallv/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=5 alltoallv/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=5 overlap/vertex                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=5 overlap/edge                          L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=8 allgather/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=8 allgather/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=8 alltoallv/vertex                      L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=8 alltoallv/edge                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=8 overlap/vertex                        L1 = 0.000e+00, top-4 match
+  PASS  cycle4 p=8 overlap/edge                          L1 = 0.000e+00, top-4 match
+  PASS  mixed p=1 allgather/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=1 allgather/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=1 alltoallv/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=1 alltoallv/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=1 overlap/vertex                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=1 overlap/edge                           L1 = 0.000e+00, top-7 match
+  PASS  mixed p=2 allgather/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=2 allgather/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=2 alltoallv/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=2 alltoallv/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=2 overlap/vertex                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=2 overlap/edge                           L1 = 0.000e+00, top-7 match
+  PASS  mixed p=3 allgather/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=3 allgather/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=3 alltoallv/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=3 alltoallv/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=3 overlap/vertex                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=3 overlap/edge                           L1 = 0.000e+00, top-7 match
+  PASS  mixed p=4 allgather/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=4 allgather/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=4 alltoallv/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=4 alltoallv/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=4 overlap/vertex                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=4 overlap/edge                           L1 = 0.000e+00, top-7 match
+  PASS  mixed p=5 allgather/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=5 allgather/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=5 alltoallv/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=5 alltoallv/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=5 overlap/vertex                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=5 overlap/edge                           L1 = 0.000e+00, top-7 match
+  PASS  mixed p=8 allgather/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=8 allgather/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=8 alltoallv/vertex                       L1 = 0.000e+00, top-7 match
+  PASS  mixed p=8 alltoallv/edge                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=8 overlap/vertex                         L1 = 0.000e+00, top-7 match
+  PASS  mixed p=8 overlap/edge                           L1 = 0.000e+00, top-7 match
+  PASS  rmat12 p=1 allgather/vertex                      L1 = 0.000e+00, top-10 match
+  PASS  rmat12 p=1 allgather/edge                        L1 = 0.000e+00, top-10 match
+  PASS  rmat12 p=1 alltoallv/vertex                      L1 = 0.000e+00, top-10 match
+  PASS  rmat12 p=1 alltoallv/edge                        L1 = 0.000e+00, top-10 match
+  PASS  rmat12 p=1 overlap/vertex                        L1 = 0.000e+00, top-10 match
+  PASS  rmat12 p=1 overlap/edge                          L1 = 0.000e+00, top-10 match
+  PASS  rmat12 p=2 allgather/vertex                      L1 = 7.234e-15, top-10 match
+  PASS  rmat12 p=2 allgather/edge                        L1 = 7.234e-15, top-10 match
+  PASS  rmat12 p=2 alltoallv/vertex                      L1 = 7.234e-15, top-10 match
+  PASS  rmat12 p=2 alltoallv/edge                        L1 = 7.234e-15, top-10 match
+  PASS  rmat12 p=2 overlap/vertex                        L1 = 7.356e-15, top-10 match
+  PASS  rmat12 p=2 overlap/edge                          L1 = 7.300e-15, top-10 match
+  PASS  rmat12 p=3 allgather/vertex                      L1 = 6.211e-15, top-10 match
+  PASS  rmat12 p=3 allgather/edge                        L1 = 6.211e-15, top-10 match
+  PASS  rmat12 p=3 alltoallv/vertex                      L1 = 6.211e-15, top-10 match
+  PASS  rmat12 p=3 alltoallv/edge                        L1 = 6.211e-15, top-10 match
+  PASS  rmat12 p=3 overlap/vertex                        L1 = 6.397e-15, top-10 match
+  PASS  rmat12 p=3 overlap/edge                          L1 = 6.291e-15, top-10 match
+  PASS  rmat12 p=4 allgather/vertex                      L1 = 4.995e-15, top-10 match
+  PASS  rmat12 p=4 allgather/edge                        L1 = 4.995e-15, top-10 match
+  PASS  rmat12 p=4 alltoallv/vertex                      L1 = 4.995e-15, top-10 match
+  PASS  rmat12 p=4 alltoallv/edge                        L1 = 4.995e-15, top-10 match
+  PASS  rmat12 p=4 overlap/vertex                        L1 = 4.969e-15, top-10 match
+  PASS  rmat12 p=4 overlap/edge                          L1 = 4.963e-15, top-10 match
+  PASS  rmat12 p=5 allgather/vertex                      L1 = 4.682e-15, top-10 match
+  PASS  rmat12 p=5 allgather/edge                        L1 = 4.682e-15, top-10 match
+  PASS  rmat12 p=5 alltoallv/vertex                      L1 = 4.682e-15, top-10 match
+  PASS  rmat12 p=5 alltoallv/edge                        L1 = 4.682e-15, top-10 match
+  PASS  rmat12 p=5 overlap/vertex                        L1 = 4.847e-15, top-10 match
+  PASS  rmat12 p=5 overlap/edge                          L1 = 4.697e-15, top-10 match
+  PASS  rmat12 p=8 allgather/vertex                      L1 = 4.682e-15, top-10 match
+  PASS  rmat12 p=8 allgather/edge                        L1 = 4.682e-15, top-10 match
+  PASS  rmat12 p=8 alltoallv/vertex                      L1 = 4.682e-15, top-10 match
+  PASS  rmat12 p=8 alltoallv/edge                        L1 = 4.682e-15, top-10 match
+  PASS  rmat12 p=8 overlap/vertex                        L1 = 4.705e-15, top-10 match
+  PASS  rmat12 p=8 overlap/edge                          L1 = 4.727e-15, top-10 match
+  PASS  rmat15 p=1 allgather/vertex                      L1 = 0.000e+00, top-10 match
+  PASS  rmat15 p=1 allgather/edge                        L1 = 0.000e+00, top-10 match
+  PASS  rmat15 p=1 alltoallv/vertex                      L1 = 0.000e+00, top-10 match
+  PASS  rmat15 p=1 alltoallv/edge                        L1 = 0.000e+00, top-10 match
+  PASS  rmat15 p=1 overlap/vertex                        L1 = 0.000e+00, top-10 match
+  PASS  rmat15 p=1 overlap/edge                          L1 = 0.000e+00, top-10 match
+  PASS  rmat15 p=2 allgather/vertex                      L1 = 3.892e-14, top-10 match
+  PASS  rmat15 p=2 allgather/edge                        L1 = 3.879e-14, top-10 match
+  PASS  rmat15 p=2 alltoallv/vertex                      L1 = 3.892e-14, top-10 match
+  PASS  rmat15 p=2 alltoallv/edge                        L1 = 3.879e-14, top-10 match
+  PASS  rmat15 p=2 overlap/vertex                        L1 = 3.904e-14, top-10 match
+  PASS  rmat15 p=2 overlap/edge                          L1 = 3.895e-14, top-10 match
+  PASS  rmat15 p=3 allgather/vertex                      L1 = 1.116e-14, top-10 match
+  PASS  rmat15 p=3 allgather/edge                        L1 = 1.116e-14, top-10 match
+  PASS  rmat15 p=3 alltoallv/vertex                      L1 = 1.116e-14, top-10 match
+  PASS  rmat15 p=3 alltoallv/edge                        L1 = 1.116e-14, top-10 match
+  PASS  rmat15 p=3 overlap/vertex                        L1 = 1.086e-14, top-10 match
+  PASS  rmat15 p=3 overlap/edge                          L1 = 1.085e-14, top-10 match
+  PASS  rmat15 p=4 allgather/vertex                      L1 = 1.975e-14, top-10 match
+  PASS  rmat15 p=4 allgather/edge                        L1 = 2.560e-14, top-10 match
+  PASS  rmat15 p=4 alltoallv/vertex                      L1 = 1.975e-14, top-10 match
+  PASS  rmat15 p=4 alltoallv/edge                        L1 = 2.560e-14, top-10 match
+  PASS  rmat15 p=4 overlap/vertex                        L1 = 2.005e-14, top-10 match
+  PASS  rmat15 p=4 overlap/edge                          L1 = 2.598e-14, top-10 match
+  PASS  rmat15 p=5 allgather/vertex                      L1 = 3.563e-14, top-10 match
+  PASS  rmat15 p=5 allgather/edge                        L1 = 3.563e-14, top-10 match
+  PASS  rmat15 p=5 alltoallv/vertex                      L1 = 3.563e-14, top-10 match
+  PASS  rmat15 p=5 alltoallv/edge                        L1 = 3.563e-14, top-10 match
+  PASS  rmat15 p=5 overlap/vertex                        L1 = 3.580e-14, top-10 match
+  PASS  rmat15 p=5 overlap/edge                          L1 = 3.577e-14, top-10 match
+  PASS  rmat15 p=8 allgather/vertex                      L1 = 3.997e-14, top-10 match
+  PASS  rmat15 p=8 allgather/edge                        L1 = 3.997e-14, top-10 match
+  PASS  rmat15 p=8 alltoallv/vertex                      L1 = 3.997e-14, top-10 match
+  PASS  rmat15 p=8 alltoallv/edge                        L1 = 3.997e-14, top-10 match
+  PASS  rmat15 p=8 overlap/vertex                        L1 = 4.027e-14, top-10 match
+  PASS  rmat15 p=8 overlap/edge                          L1 = 4.031e-14, top-10 match
+  PASS  star p=1 allgather/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=1 allgather/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=1 alltoallv/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=1 alltoallv/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=1 overlap/vertex                          L1 = 0.000e+00, top-6 match
+  PASS  star p=1 overlap/edge                            L1 = 0.000e+00, top-6 match
+  PASS  star p=2 allgather/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=2 allgather/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=2 alltoallv/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=2 alltoallv/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=2 overlap/vertex                          L1 = 0.000e+00, top-6 match
+  PASS  star p=2 overlap/edge                            L1 = 0.000e+00, top-6 match
+  PASS  star p=3 allgather/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=3 allgather/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=3 alltoallv/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=3 alltoallv/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=3 overlap/vertex                          L1 = 0.000e+00, top-6 match
+  PASS  star p=3 overlap/edge                            L1 = 0.000e+00, top-6 match
+  PASS  star p=4 allgather/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=4 allgather/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=4 alltoallv/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=4 alltoallv/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=4 overlap/vertex                          L1 = 0.000e+00, top-6 match
+  PASS  star p=4 overlap/edge                            L1 = 0.000e+00, top-6 match
+  PASS  star p=5 allgather/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=5 allgather/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=5 alltoallv/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=5 alltoallv/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=5 overlap/vertex                          L1 = 0.000e+00, top-6 match
+  PASS  star p=5 overlap/edge                            L1 = 0.000e+00, top-6 match
+  PASS  star p=8 allgather/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=8 allgather/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=8 alltoallv/vertex                        L1 = 0.000e+00, top-6 match
+  PASS  star p=8 alltoallv/edge                          L1 = 0.000e+00, top-6 match
+  PASS  star p=8 overlap/vertex                          L1 = 0.000e+00, top-6 match
+  PASS  star p=8 overlap/edge                            L1 = 0.000e+00, top-6 match
+== convergence: MPI stops at the same iteration as sequential
+  PASS  iterations rmat15 allgather p=4                  seq 18 mpi 18 converged True
+  PASS  iterations rmat15 alltoallv p=4                  seq 18 mpi 18 converged True
+  PASS  iterations rmat15 overlap p=4                    seq 18 mpi 18 converged True
+
+passed: 226   failed: 0
+== benchmarks
+{
+  "cpu": "11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz",
+  "logical_cpus": 8,
+  "cores": 4,
+  "threads_per_core": "2",
+  "l2": "5 MiB (4 instances)",
+  "l3": "8 MiB (1 instance)",
+  "memory_gb": 7.6,
+  "os": "Ubuntu 24.04.5 LTS",
+  "kernel": "6.18.33.2-microsoft-standard-WSL2",
+  "mpi": "mpirun (Open MPI) 4.1.6",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "flags": "-O3 -march=native -std=c++17",
+  "binding": "one rank per physical core (--bind-to core); P > cores uses hyper-threads"
+}
+== strong scaling: web-Google
+    seq_r0                               solve    1.449s  iters 104  (wall 1.5s)
+    seq_r1                               solve    1.361s  iters 104  (wall 1.4s)
+    seq_r2                               solve    1.507s  iters 104  (wall 1.6s)
+    mpi_p1_allgather_vertex_r0           solve    1.498s  iters 104  (wall 1.9s)
+    mpi_p1_allgather_vertex_r1           solve    1.529s  iters 104  (wall 1.9s)
+    mpi_p1_allgather_vertex_r2           solve    1.457s  iters 104  (wall 1.8s)
+    mpi_p1_allgather_edge_r0             solve    1.459s  iters 104  (wall 1.8s)
+    mpi_p1_allgather_edge_r1             solve    1.595s  iters 104  (wall 2.0s)
+    mpi_p1_allgather_edge_r2             solve    1.563s  iters 104  (wall 1.9s)
+    mpi_p1_alltoallv_vertex_r0           solve    1.527s  iters 104  (wall 1.9s)
+    mpi_p1_alltoallv_vertex_r1           solve    1.479s  iters 104  (wall 1.8s)
+    mpi_p1_alltoallv_vertex_r2           solve    1.512s  iters 104  (wall 1.9s)
+    mpi_p1_alltoallv_edge_r0             solve    1.618s  iters 104  (wall 2.0s)
+    mpi_p1_alltoallv_edge_r1             solve    1.537s  iters 104  (wall 1.9s)
+    mpi_p1_alltoallv_edge_r2             solve    1.427s  iters 104  (wall 1.8s)
+    mpi_p1_overlap_vertex_r0             solve    1.734s  iters 104  (wall 2.1s)
+    mpi_p1_overlap_vertex_r1             solve    1.810s  iters 104  (wall 0.9s)
+    mpi_p1_overlap_vertex_r2             solve    1.756s  iters 104  (wall 2.2s)
+    mpi_p1_overlap_edge_r0               solve    1.744s  iters 104  (wall 2.1s)
+    mpi_p1_overlap_edge_r1               solve    1.707s  iters 104  (wall 2.1s)
+    mpi_p1_overlap_edge_r2               solve    1.922s  iters 104  (wall 2.3s)
+    mpi_p2_allgather_vertex_r0           solve    1.454s  iters 104  (wall 1.8s)
+    mpi_p2_allgather_vertex_r1           solve    1.503s  iters 104  (wall 1.9s)
+    mpi_p2_allgather_vertex_r2           solve    1.456s  iters 104  (wall 1.8s)
+    mpi_p2_allgather_edge_r0             solve    1.266s  iters 104  (wall 1.6s)
+    mpi_p2_allgather_edge_r1             solve    1.320s  iters 104  (wall 1.7s)
+    mpi_p2_allgather_edge_r2             solve    1.533s  iters 104  (wall 1.9s)
+    mpi_p2_alltoallv_vertex_r0           solve    1.493s  iters 104  (wall 1.9s)
+    mpi_p2_alltoallv_vertex_r1           solve    1.365s  iters 104  (wall 1.7s)
+    mpi_p2_alltoallv_vertex_r2           solve    1.554s  iters 104  (wall 1.9s)
+    mpi_p2_alltoallv_edge_r0             solve    1.343s  iters 104  (wall 1.7s)
+    mpi_p2_alltoallv_edge_r1             solve    1.276s  iters 104  (wall 1.6s)
+    mpi_p2_alltoallv_edge_r2             solve    1.328s  iters 104  (wall 1.7s)
+    mpi_p2_overlap_vertex_r0             solve    1.423s  iters 104  (wall 0.5s)
+    mpi_p2_overlap_vertex_r1             solve    1.460s  iters 104  (wall 1.8s)
+    mpi_p2_overlap_vertex_r2             solve    1.714s  iters 104  (wall 2.1s)
+    mpi_p2_overlap_edge_r0               solve    1.511s  iters 104  (wall 1.9s)
+    mpi_p2_overlap_edge_r1               solve    1.295s  iters 104  (wall 1.7s)
+    mpi_p2_overlap_edge_r2               solve    1.552s  iters 104  (wall 1.9s)
+    mpi_p3_allgather_vertex_r0           solve    1.530s  iters 104  (wall 1.9s)
+    mpi_p3_allgather_vertex_r1           solve    1.639s  iters 104  (wall 2.0s)
+    mpi_p3_allgather_vertex_r2           solve    1.491s  iters 104  (wall 1.9s)
+    mpi_p3_allgather_edge_r0             solve    1.254s  iters 104  (wall 1.6s)
+    mpi_p3_allgather_edge_r1             solve    1.384s  iters 104  (wall 1.8s)
+    mpi_p3_allgather_edge_r2             solve    1.419s  iters 104  (wall 1.8s)
+    mpi_p3_alltoallv_vertex_r0           solve    1.323s  iters 104  (wall 1.7s)
+    mpi_p3_alltoallv_vertex_r1           solve    1.479s  iters 104  (wall 1.9s)
+    mpi_p3_alltoallv_vertex_r2           solve    1.490s  iters 104  (wall 1.9s)
+    mpi_p3_alltoallv_edge_r0             solve    1.421s  iters 104  (wall 1.8s)
+    mpi_p3_alltoallv_edge_r1             solve    1.401s  iters 104  (wall 1.8s)
+    mpi_p3_alltoallv_edge_r2             solve    1.289s  iters 104  (wall 0.3s)
+    mpi_p3_overlap_vertex_r0             solve    1.471s  iters 104  (wall 1.9s)
+    mpi_p3_overlap_vertex_r1             solve    1.622s  iters 104  (wall 2.0s)
+    mpi_p3_overlap_vertex_r2             solve    1.607s  iters 104  (wall 2.0s)
+    mpi_p3_overlap_edge_r0               solve    1.465s  iters 104  (wall 1.9s)
+    mpi_p3_overlap_edge_r1               solve    1.552s  iters 104  (wall 2.0s)
+    mpi_p3_overlap_edge_r2               solve    1.500s  iters 104  (wall 1.9s)
+    mpi_p4_allgather_vertex_r0           solve    1.871s  iters 104  (wall 2.3s)
+    mpi_p4_allgather_vertex_r1           solve    1.814s  iters 104  (wall 2.2s)
+    mpi_p4_allgather_vertex_r2           solve    1.634s  iters 104  (wall 2.0s)
+    mpi_p4_allgather_edge_r0             solve    1.463s  iters 104  (wall 1.8s)
+    mpi_p4_allgather_edge_r1             solve    1.536s  iters 104  (wall 2.0s)
+    mpi_p4_allgather_edge_r2             solve    1.527s  iters 104  (wall 1.9s)
+    mpi_p4_alltoallv_vertex_r0           solve    1.503s  iters 104  (wall 1.9s)
+    mpi_p4_alltoallv_vertex_r1           solve    1.404s  iters 104  (wall 1.8s)
+    mpi_p4_alltoallv_vertex_r2           solve    1.447s  iters 104  (wall 1.9s)
+    mpi_p4_alltoallv_edge_r0             solve    1.289s  iters 104  (wall 1.7s)
+    mpi_p4_alltoallv_edge_r1             solve    1.182s  iters 104  (wall 0.3s)
+    mpi_p4_alltoallv_edge_r2             solve    1.237s  iters 104  (wall 1.7s)
+    mpi_p4_overlap_vertex_r0             solve    1.311s  iters 104  (wall 1.8s)
+    mpi_p4_overlap_vertex_r1             solve    1.442s  iters 104  (wall 1.9s)
+    mpi_p4_overlap_vertex_r2             solve    1.486s  iters 104  (wall 1.9s)
+    mpi_p4_overlap_edge_r0               solve    1.385s  iters 104  (wall 1.8s)
+    mpi_p4_overlap_edge_r1               solve    1.353s  iters 104  (wall 1.8s)
+    mpi_p4_overlap_edge_r2               solve    1.276s  iters 104  (wall 1.7s)
+    mpi_p6_allgather_vertex_r0           solve    1.926s  iters 104  (wall 2.3s)
+    mpi_p6_allgather_vertex_r1           solve    1.818s  iters 104  (wall 2.3s)
+    mpi_p6_allgather_vertex_r2           solve    1.691s  iters 104  (wall 2.1s)
+    mpi_p6_allgather_edge_r0             solve    1.552s  iters 104  (wall 2.0s)
+    mpi_p6_allgather_edge_r1             solve    1.618s  iters 104  (wall 2.0s)
+    mpi_p6_allgather_edge_r2             solve    1.501s  iters 104  (wall 1.9s)
+    mpi_p6_alltoallv_vertex_r0           solve    1.354s  iters 104  (wall 1.8s)
+    mpi_p6_alltoallv_vertex_r1           solve    1.282s  iters 104  (wall 1.7s)
+    mpi_p6_alltoallv_vertex_r2           solve    1.394s  iters 104  (wall 1.8s)
+    mpi_p6_alltoallv_edge_r0             solve    1.110s  iters 104  (wall 0.2s)
+    mpi_p6_alltoallv_edge_r1             solve    1.107s  iters 104  (wall 1.6s)
+    mpi_p6_alltoallv_edge_r2             solve    1.036s  iters 104  (wall 1.5s)
+    mpi_p6_overlap_vertex_r0             solve    1.427s  iters 104  (wall 1.9s)
+    mpi_p6_overlap_vertex_r1             solve    1.418s  iters 104  (wall 1.9s)
+    mpi_p6_overlap_vertex_r2             solve    1.444s  iters 104  (wall 1.9s)
+    mpi_p6_overlap_edge_r0               solve    1.407s  iters 104  (wall 1.9s)
+    mpi_p6_overlap_edge_r1               solve    1.189s  iters 104  (wall 1.6s)
+    mpi_p6_overlap_edge_r2               solve    1.231s  iters 104  (wall 1.7s)
+    mpi_p8_allgather_vertex_r0           solve    2.324s  iters 104  (wall 2.7s)
+    mpi_p8_allgather_vertex_r1           solve    2.096s  iters 104  (wall 2.5s)
+    mpi_p8_allgather_vertex_r2           solve    2.143s  iters 104  (wall 2.6s)
+    mpi_p8_allgather_edge_r0             solve    1.660s  iters 104  (wall 2.1s)
+    mpi_p8_allgather_edge_r1             solve    1.653s  iters 104  (wall 2.1s)
+    mpi_p8_allgather_edge_r2             solve    1.602s  iters 104  (wall 2.1s)
+    mpi_p8_alltoallv_vertex_r0           solve    1.297s  iters 104  (wall 1.8s)
+    mpi_p8_alltoallv_vertex_r1           solve    1.541s  iters 104  (wall 0.6s)
+    mpi_p8_alltoallv_vertex_r2           solve    1.444s  iters 104  (wall 1.9s)
+    mpi_p8_alltoallv_edge_r0             solve    1.096s  iters 104  (wall 1.5s)
+    mpi_p8_alltoallv_edge_r1             solve    1.035s  iters 104  (wall 1.5s)
+    mpi_p8_alltoallv_edge_r2             solve    1.086s  iters 104  (wall 1.6s)
+    mpi_p8_overlap_vertex_r0             solve    1.433s  iters 104  (wall 1.9s)
+    mpi_p8_overlap_vertex_r1             solve    1.469s  iters 104  (wall 1.9s)
+    mpi_p8_overlap_vertex_r2             solve    1.527s  iters 104  (wall 2.1s)
+    mpi_p8_overlap_edge_r0               solve    1.248s  iters 104  (wall 1.7s)
+    mpi_p8_overlap_edge_r1               solve    1.508s  iters 104  (wall 2.0s)
+    mpi_p8_overlap_edge_r2               solve    1.441s  iters 104  (wall 1.9s)
+== strong scaling: web-BerkStan
+    seq_r0                               solve    1.226s  iters 106  (wall 1.4s)
+    seq_r1                               solve    1.130s  iters 106  (wall 1.2s)
+    seq_r2                               solve    1.110s  iters 106  (wall 1.2s)
+    mpi_p1_allgather_vertex_r0           solve    1.050s  iters 106  (wall 1.4s)
+    mpi_p1_allgather_vertex_r1           solve    1.150s  iters 106  (wall 1.5s)
+    mpi_p1_allgather_vertex_r2           solve    1.171s  iters 106  (wall 1.5s)
+    mpi_p1_allgather_edge_r0             solve    1.225s  iters 106  (wall 1.6s)
+    mpi_p1_allgather_edge_r1             solve    1.172s  iters 106  (wall 1.5s)
+    mpi_p1_allgather_edge_r2             solve    1.114s  iters 106  (wall 1.5s)
+    mpi_p1_alltoallv_vertex_r0           solve    1.139s  iters 106  (wall -0.2s)
+    mpi_p1_alltoallv_vertex_r1           solve    1.145s  iters 106  (wall 1.5s)
+    mpi_p1_alltoallv_vertex_r2           solve    1.108s  iters 106  (wall 1.5s)
+    mpi_p1_alltoallv_edge_r0             solve    1.138s  iters 106  (wall 1.5s)
+    mpi_p1_alltoallv_edge_r1             solve    1.196s  iters 106  (wall 1.6s)
+    mpi_p1_alltoallv_edge_r2             solve    1.118s  iters 106  (wall 1.5s)
+    mpi_p1_overlap_vertex_r0             solve    1.305s  iters 106  (wall 1.7s)
+    mpi_p1_overlap_vertex_r1             solve    1.347s  iters 106  (wall 1.8s)
+    mpi_p1_overlap_vertex_r2             solve    1.317s  iters 106  (wall 1.7s)
+    mpi_p1_overlap_edge_r0               solve    1.310s  iters 106  (wall 1.7s)
+    mpi_p1_overlap_edge_r1               solve    1.318s  iters 106  (wall 1.7s)
+    mpi_p1_overlap_edge_r2               solve    1.382s  iters 106  (wall 1.8s)
+    mpi_p2_allgather_vertex_r0           solve    0.829s  iters 106  (wall 1.2s)
+    mpi_p2_allgather_vertex_r1           solve    0.860s  iters 106  (wall 1.2s)
+    mpi_p2_allgather_vertex_r2           solve    0.818s  iters 106  (wall 1.2s)
+    mpi_p2_allgather_edge_r0             solve    0.795s  iters 106  (wall 1.2s)
+    mpi_p2_allgather_edge_r1             solve    0.748s  iters 106  (wall 1.1s)
+    mpi_p2_allgather_edge_r2             solve    0.773s  iters 106  (wall 1.1s)
+    mpi_p2_alltoallv_vertex_r0           solve    0.760s  iters 106  (wall 1.1s)
+    mpi_p2_alltoallv_vertex_r1           solve    0.834s  iters 106  (wall 1.2s)
+    mpi_p2_alltoallv_vertex_r2           solve    0.763s  iters 106  (wall 1.1s)
+    mpi_p2_alltoallv_edge_r0             solve    0.747s  iters 106  (wall 1.1s)
+    mpi_p2_alltoallv_edge_r1             solve    0.750s  iters 106  (wall 1.1s)
+    mpi_p2_alltoallv_edge_r2             solve    0.718s  iters 106  (wall -0.3s)
+    mpi_p2_overlap_vertex_r0             solve    0.958s  iters 106  (wall 1.3s)
+    mpi_p2_overlap_vertex_r1             solve    0.930s  iters 106  (wall 1.3s)
+    mpi_p2_overlap_vertex_r2             solve    0.949s  iters 106  (wall 1.3s)
+    mpi_p2_overlap_edge_r0               solve    0.889s  iters 106  (wall 1.3s)
+    mpi_p2_overlap_edge_r1               solve    1.012s  iters 106  (wall 1.4s)
+    mpi_p2_overlap_edge_r2               solve    0.923s  iters 106  (wall 1.3s)
+    mpi_p3_allgather_vertex_r0           solve    0.822s  iters 106  (wall 1.2s)
+    mpi_p3_allgather_vertex_r1           solve    0.833s  iters 106  (wall 1.2s)
+    mpi_p3_allgather_vertex_r2           solve    0.846s  iters 106  (wall 1.2s)
+    mpi_p3_allgather_edge_r0             solve    0.771s  iters 106  (wall 1.2s)
+    mpi_p3_allgather_edge_r1             solve    0.756s  iters 106  (wall 1.2s)
+    mpi_p3_allgather_edge_r2             solve    0.781s  iters 106  (wall 1.2s)
+    mpi_p3_alltoallv_vertex_r0           solve    0.715s  iters 106  (wall 1.1s)
+    mpi_p3_alltoallv_vertex_r1           solve    0.814s  iters 106  (wall 1.2s)
+    mpi_p3_alltoallv_vertex_r2           solve    0.724s  iters 106  (wall 1.1s)
+    mpi_p3_alltoallv_edge_r0             solve    0.679s  iters 106  (wall 1.0s)
+    mpi_p3_alltoallv_edge_r1             solve    0.691s  iters 106  (wall 1.1s)
+    mpi_p3_alltoallv_edge_r2             solve    0.660s  iters 106  (wall 1.0s)
+    mpi_p3_overlap_vertex_r0             solve    0.970s  iters 106  (wall 1.4s)
+    mpi_p3_overlap_vertex_r1             solve    0.787s  iters 106  (wall 1.2s)
+    mpi_p3_overlap_vertex_r2             solve    0.849s  iters 106  (wall 1.2s)
+    mpi_p3_overlap_edge_r0               solve    0.793s  iters 106  (wall 1.2s)
+    mpi_p3_overlap_edge_r1               solve    0.765s  iters 106  (wall 1.2s)
+    mpi_p3_overlap_edge_r2               solve    0.786s  iters 106  (wall 1.2s)
+    mpi_p4_allgather_vertex_r0           solve    0.889s  iters 106  (wall 1.3s)
+    mpi_p4_allgather_vertex_r1           solve    0.854s  iters 106  (wall -0.2s)
+    mpi_p4_allgather_vertex_r2           solve    0.844s  iters 106  (wall 1.2s)
+    mpi_p4_allgather_edge_r0             solve    0.866s  iters 106  (wall 1.2s)
+    mpi_p4_allgather_edge_r1             solve    0.775s  iters 106  (wall 1.2s)
+    mpi_p4_allgather_edge_r2             solve    0.763s  iters 106  (wall 1.2s)
+    mpi_p4_alltoallv_vertex_r0           solve    0.726s  iters 106  (wall 1.1s)
+    mpi_p4_alltoallv_vertex_r1           solve    0.744s  iters 106  (wall 1.1s)
+    mpi_p4_alltoallv_vertex_r2           solve    0.739s  iters 106  (wall 1.2s)
+    mpi_p4_alltoallv_edge_r0             solve    0.658s  iters 106  (wall 1.0s)
+    mpi_p4_alltoallv_edge_r1             solve    0.629s  iters 106  (wall 1.0s)
+    mpi_p4_alltoallv_edge_r2             solve    0.630s  iters 106  (wall 1.0s)
+    mpi_p4_overlap_vertex_r0             solve    0.806s  iters 106  (wall 1.2s)
+    mpi_p4_overlap_vertex_r1             solve    0.839s  iters 106  (wall 1.3s)
+    mpi_p4_overlap_vertex_r2             solve    0.805s  iters 106  (wall 1.2s)
+    mpi_p4_overlap_edge_r0               solve    0.759s  iters 106  (wall 1.2s)
+    mpi_p4_overlap_edge_r1               solve    0.772s  iters 106  (wall 1.2s)
+    mpi_p4_overlap_edge_r2               solve    0.859s  iters 106  (wall 1.3s)
+    mpi_p6_allgather_vertex_r0           solve    1.021s  iters 106  (wall 1.4s)
+    mpi_p6_allgather_vertex_r1           solve    0.994s  iters 106  (wall 1.4s)
+    mpi_p6_allgather_vertex_r2           solve    1.074s  iters 106  (wall 1.5s)
+    mpi_p6_allgather_edge_r0             solve    1.149s  iters 106  (wall 1.6s)
+    mpi_p6_allgather_edge_r1             solve    0.919s  iters 106  (wall 1.3s)
+    mpi_p6_allgather_edge_r2             solve    0.981s  iters 106  (wall 1.4s)
+    mpi_p6_alltoallv_vertex_r0           solve    0.782s  iters 106  (wall 1.2s)
+    mpi_p6_alltoallv_vertex_r1           solve    0.816s  iters 106  (wall 1.3s)
+    mpi_p6_alltoallv_vertex_r2           solve    0.751s  iters 106  (wall 1.2s)
+    mpi_p6_alltoallv_edge_r0             solve    0.595s  iters 106  (wall -0.4s)
+    mpi_p6_alltoallv_edge_r1             solve    0.592s  iters 106  (wall 1.0s)
+    mpi_p6_alltoallv_edge_r2             solve    0.592s  iters 106  (wall 1.0s)
+    mpi_p6_overlap_vertex_r0             solve    0.901s  iters 106  (wall 1.4s)
+    mpi_p6_overlap_vertex_r1             solve    0.835s  iters 106  (wall 1.3s)
+    mpi_p6_overlap_vertex_r2             solve    0.810s  iters 106  (wall 1.2s)
+    mpi_p6_overlap_edge_r0               solve    0.708s  iters 106  (wall 1.1s)
+    mpi_p6_overlap_edge_r1               solve    0.850s  iters 106  (wall 1.3s)
+    mpi_p6_overlap_edge_r2               solve    0.707s  iters 106  (wall 1.2s)
+    mpi_p8_allgather_vertex_r0           solve    1.199s  iters 106  (wall 1.6s)
+    mpi_p8_allgather_vertex_r1           solve    1.198s  iters 106  (wall 1.6s)
+    mpi_p8_allgather_vertex_r2           solve    1.355s  iters 106  (wall 1.9s)
+    mpi_p8_allgather_edge_r0             solve    1.085s  iters 106  (wall 1.5s)
+    mpi_p8_allgather_edge_r1             solve    1.035s  iters 106  (wall 1.5s)
+    mpi_p8_allgather_edge_r2             solve    1.421s  iters 106  (wall 1.9s)
+    mpi_p8_alltoallv_vertex_r0           solve    0.802s  iters 106  (wall 1.3s)
+    mpi_p8_alltoallv_vertex_r1           solve    0.813s  iters 106  (wall 1.3s)
+    mpi_p8_alltoallv_vertex_r2           solve    0.821s  iters 106  (wall 1.3s)
+    mpi_p8_alltoallv_edge_r0             solve    0.919s  iters 106  (wall 1.4s)
+    mpi_p8_alltoallv_edge_r1             solve    0.677s  iters 106  (wall 1.1s)
+    mpi_p8_alltoallv_edge_r2             solve    0.648s  iters 106  (wall 1.1s)
+    mpi_p8_overlap_vertex_r0             solve    0.890s  iters 106  (wall 1.4s)
+    mpi_p8_overlap_vertex_r1             solve    0.906s  iters 106  (wall 1.4s)
+    mpi_p8_overlap_vertex_r2             solve    0.919s  iters 106  (wall 1.4s)
+    mpi_p8_overlap_edge_r0               solve    0.859s  iters 106  (wall -0.2s)
+    mpi_p8_overlap_edge_r1               solve    0.794s  iters 106  (wall 1.3s)
+    mpi_p8_overlap_edge_r2               solve    0.800s  iters 106  (wall 1.3s)
+== strong scaling: soc-LiveJournal1
+    seq_r0                               solve   23.323s  iters  90  (wall 24.0s)
+    seq_r1                               solve   23.164s  iters  90  (wall 21.8s)
+    seq_r2                               solve   22.954s  iters  90  (wall 21.6s)
+    mpi_p1_allgather_vertex_r0           solve   23.166s  iters  90  (wall 22.3s)
+    mpi_p1_allgather_vertex_r1           solve   23.262s  iters  90  (wall 23.8s)
+    mpi_p1_allgather_vertex_r2           solve   23.640s  iters  90  (wall 22.7s)
+    mpi_p1_allgather_edge_r0             solve   24.069s  iters  90  (wall 23.1s)
+    mpi_p1_allgather_edge_r1             solve   23.390s  iters  90  (wall 22.5s)
+    mpi_p1_allgather_edge_r2             solve   24.400s  iters  90  (wall 24.9s)
+    mpi_p1_alltoallv_vertex_r0           solve   23.346s  iters  90  (wall 22.3s)
+    mpi_p1_alltoallv_vertex_r1           solve   23.289s  iters  90  (wall 22.4s)
+    mpi_p1_alltoallv_vertex_r2           solve   23.212s  iters  90  (wall 22.3s)
+    mpi_p1_alltoallv_edge_r0             solve   23.356s  iters  90  (wall 24.0s)
+    mpi_p1_alltoallv_edge_r1             solve   23.234s  iters  90  (wall 22.3s)
+    mpi_p1_alltoallv_edge_r2             solve   23.203s  iters  90  (wall 22.3s)
+    mpi_p1_overlap_vertex_r0             solve   24.260s  iters  90  (wall 23.9s)
+    mpi_p1_overlap_vertex_r1             solve   24.170s  iters  90  (wall 25.4s)
+    mpi_p1_overlap_vertex_r2             solve   23.959s  iters  90  (wall 23.5s)
+    mpi_p1_overlap_edge_r0               solve   24.077s  iters  90  (wall 23.8s)
+    mpi_p1_overlap_edge_r1               solve   24.069s  iters  90  (wall 23.7s)
+    mpi_p1_overlap_edge_r2               solve   24.256s  iters  90  (wall 25.4s)
+    mpi_p2_allgather_vertex_r0           solve   22.573s  iters  90  (wall 21.5s)
+    mpi_p2_allgather_vertex_r1           solve   22.607s  iters  90  (wall 21.5s)
+    mpi_p2_allgather_vertex_r2           solve   23.311s  iters  90  (wall 22.2s)
+    mpi_p2_allgather_edge_r0             solve   18.900s  iters  90  (wall 19.4s)
+    mpi_p2_allgather_edge_r1             solve   18.699s  iters  90  (wall 17.5s)
+    mpi_p2_allgather_edge_r2             solve   18.668s  iters  90  (wall 19.2s)
+    mpi_p2_alltoallv_vertex_r0           solve   22.940s  iters  90  (wall 22.0s)
+    mpi_p2_alltoallv_vertex_r1           solve   22.519s  iters  90  (wall 21.5s)
+    mpi_p2_alltoallv_vertex_r2           solve   22.709s  iters  90  (wall 21.9s)
+    mpi_p2_alltoallv_edge_r0             solve   19.854s  iters  90  (wall 20.5s)
+    mpi_p2_alltoallv_edge_r1             solve   18.746s  iters  90  (wall 17.8s)
+    mpi_p2_alltoallv_edge_r2             solve   19.509s  iters  90  (wall 20.2s)
+    mpi_p2_overlap_vertex_r0             solve   22.539s  iters  90  (wall 21.8s)
+    mpi_p2_overlap_vertex_r1             solve   22.986s  iters  90  (wall 22.5s)
+    mpi_p2_overlap_vertex_r2             solve   22.302s  iters  90  (wall 21.8s)
+    mpi_p2_overlap_edge_r0               solve   17.627s  iters  90  (wall 18.6s)
+    mpi_p2_overlap_edge_r1               solve   17.031s  iters  90  (wall 16.3s)
+    mpi_p2_overlap_edge_r2               solve   16.915s  iters  90  (wall 17.8s)
+    mpi_p3_allgather_vertex_r0           solve   22.679s  iters  90  (wall 21.5s)
+    mpi_p3_allgather_vertex_r1           solve   22.713s  iters  90  (wall 21.6s)
+    mpi_p3_allgather_vertex_r2           solve   22.656s  iters  90  (wall 21.5s)
+    mpi_p3_allgather_edge_r0             solve   18.201s  iters  90  (wall 18.7s)
+    mpi_p3_allgather_edge_r1             solve   18.324s  iters  90  (wall 17.1s)
+    mpi_p3_allgather_edge_r2             solve   18.326s  iters  90  (wall 18.9s)
+    mpi_p3_alltoallv_vertex_r0           solve   22.708s  iters  90  (wall 21.9s)
+    mpi_p3_alltoallv_vertex_r1           solve   23.035s  iters  90  (wall 22.1s)
+    mpi_p3_alltoallv_vertex_r2           solve   22.280s  iters  90  (wall 23.1s)
+    mpi_p3_alltoallv_edge_r0             solve   17.987s  iters  90  (wall 17.1s)
+    mpi_p3_alltoallv_edge_r1             solve   18.334s  iters  90  (wall 17.5s)
+    mpi_p3_alltoallv_edge_r2             solve   19.587s  iters  90  (wall 20.3s)
+    mpi_p3_overlap_vertex_r0             solve   25.287s  iters  90  (wall 24.9s)
+    mpi_p3_overlap_vertex_r1             solve   24.607s  iters  90  (wall 24.3s)
+    mpi_p3_overlap_vertex_r2             solve   25.068s  iters  90  (wall 24.8s)
+    mpi_p3_overlap_edge_r0               solve   18.713s  iters  90  (wall 19.7s)
+    mpi_p3_overlap_edge_r1               solve   18.633s  iters  90  (wall 17.9s)
+    mpi_p3_overlap_edge_r2               solve   18.936s  iters  90  (wall 18.3s)
+    mpi_p4_allgather_vertex_r0           solve   28.019s  iters  90  (wall 28.6s)
+    mpi_p4_allgather_vertex_r1           solve   29.072s  iters  90  (wall 28.0s)
+    mpi_p4_allgather_vertex_r2           solve   28.073s  iters  90  (wall 26.8s)
+    mpi_p4_allgather_edge_r0             solve   20.716s  iters  90  (wall 19.6s)
+    mpi_p4_allgather_edge_r1             solve   20.617s  iters  90  (wall 19.4s)
+    mpi_p4_allgather_edge_r2             solve   20.806s  iters  90  (wall 21.4s)
+    mpi_p4_alltoallv_vertex_r0           solve   27.299s  iters  90  (wall 26.6s)
+    mpi_p4_alltoallv_vertex_r1           solve   27.366s  iters  90  (wall 26.6s)
+    mpi_p4_alltoallv_vertex_r2           solve   27.192s  iters  90  (wall 26.3s)
+    mpi_p4_alltoallv_edge_r0             solve   19.829s  iters  90  (wall 19.2s)
+    mpi_p4_alltoallv_edge_r1             solve   21.092s  iters  90  (wall 21.9s)
+    mpi_p4_alltoallv_edge_r2             solve   20.225s  iters  90  (wall 19.2s)
+    mpi_p4_overlap_vertex_r0             solve   22.580s  iters  90  (wall 22.2s)
+    mpi_p4_overlap_vertex_r1             solve   23.485s  iters  90  (wall 24.8s)
+    mpi_p4_overlap_vertex_r2             solve   23.385s  iters  90  (wall 23.1s)
+    mpi_p4_overlap_edge_r0               solve   17.985s  iters  90  (wall 17.3s)
+    mpi_p4_overlap_edge_r1               solve   18.233s  iters  90  (wall 19.3s)
+    mpi_p4_overlap_edge_r2               solve   18.024s  iters  90  (wall 17.2s)
+    mpi_p6_allgather_vertex_r0           solve   26.128s  iters  90  (wall 25.0s)
+    mpi_p6_allgather_vertex_r1           solve   27.259s  iters  90  (wall 26.2s)
+    mpi_p6_allgather_vertex_r2           solve   26.436s  iters  90  (wall 27.1s)
+    mpi_p6_allgather_edge_r0             solve   19.376s  iters  90  (wall 18.3s)
+    mpi_p6_allgather_edge_r1             solve   19.549s  iters  90  (wall 18.4s)
+    mpi_p6_allgather_edge_r2             solve   19.479s  iters  90  (wall 20.1s)
+    mpi_p6_alltoallv_vertex_r0           solve   25.087s  iters  90  (wall 24.2s)
+    mpi_p6_alltoallv_vertex_r1           solve   26.791s  iters  90  (wall 25.9s)
+    mpi_p6_alltoallv_vertex_r2           solve   26.398s  iters  90  (wall 27.5s)
+    mpi_p6_alltoallv_edge_r0             solve   17.874s  iters  90  (wall 18.8s)
+    mpi_p6_alltoallv_edge_r1             solve   16.410s  iters  90  (wall 17.2s)
+    mpi_p6_alltoallv_edge_r2             solve   19.592s  iters  90  (wall 19.4s)
+    mpi_p6_overlap_vertex_r0             solve   22.485s  iters  90  (wall 23.1s)
+    mpi_p6_overlap_vertex_r1             solve   22.799s  iters  90  (wall 24.8s)
+    mpi_p6_overlap_vertex_r2             solve   22.889s  iters  90  (wall 23.2s)
+    mpi_p6_overlap_edge_r0               solve   18.484s  iters  90  (wall 19.0s)
+    mpi_p6_overlap_edge_r1               solve   17.957s  iters  90  (wall 19.2s)
+    mpi_p6_overlap_edge_r2               solve   17.630s  iters  90  (wall 17.7s)
+    mpi_p8_allgather_vertex_r0           solve   25.969s  iters  90  (wall 25.4s)
+    mpi_p8_allgather_vertex_r1           solve   26.227s  iters  90  (wall 25.6s)
+    mpi_p8_allgather_vertex_r2           solve   25.700s  iters  90  (wall 26.3s)
+    mpi_p8_allgather_edge_r0             solve   18.897s  iters  90  (wall 18.2s)
+    mpi_p8_allgather_edge_r1             solve   19.275s  iters  90  (wall 19.0s)
+    mpi_p8_allgather_edge_r2             solve   19.117s  iters  90  (wall 19.7s)
+    mpi_p8_alltoallv_vertex_r0           solve   23.577s  iters  90  (wall 23.2s)
+    mpi_p8_alltoallv_vertex_r1           solve   25.276s  iters  90  (wall 26.3s)
+    mpi_p8_alltoallv_vertex_r2           solve   24.956s  iters  90  (wall 24.7s)
+    mpi_p8_alltoallv_edge_r0             solve   17.907s  iters  90  (wall 17.6s)
+    mpi_p8_alltoallv_edge_r1             solve   18.879s  iters  90  (wall 20.0s)
+    mpi_p8_alltoallv_edge_r2             solve   18.511s  iters  90  (wall 18.0s)
+    mpi_p8_overlap_vertex_r0             solve   21.221s  iters  90  (wall 21.2s)
+    mpi_p8_overlap_vertex_r1             solve   22.787s  iters  90  (wall 24.3s)
+    mpi_p8_overlap_vertex_r2             solve   21.687s  iters  90  (wall 22.0s)
+    mpi_p8_overlap_edge_r0               solve   17.625s  iters  90  (wall 17.4s)
+    mpi_p8_overlap_edge_r1               solve   18.182s  iters  90  (wall 19.2s)
+    mpi_p8_overlap_edge_r2               solve   17.671s  iters  90  (wall 17.3s)
+== strong scaling: rmat-22
+    seq_r0                               solve   24.966s  iters  26  (wall 24.1s)
+    seq_r1                               solve   24.849s  iters  26  (wall 25.2s)
+    seq_r2                               solve   24.645s  iters  26  (wall 23.6s)
+    mpi_p1_allgather_vertex_r0           solve   24.710s  iters  26  (wall 24.0s)
+    mpi_p1_allgather_vertex_r1           solve   24.923s  iters  26  (wall 24.1s)
+    mpi_p1_allgather_vertex_r2           solve   24.808s  iters  26  (wall 24.0s)
+    mpi_p1_allgather_edge_r0             solve   24.282s  iters  26  (wall 24.9s)
+    mpi_p1_allgather_edge_r1             solve   25.344s  iters  26  (wall 24.5s)
+    mpi_p1_allgather_edge_r2             solve   24.919s  iters  26  (wall 24.3s)
+    mpi_p1_alltoallv_vertex_r0           solve   24.510s  iters  26  (wall 23.7s)
+    mpi_p1_alltoallv_vertex_r1           solve   24.723s  iters  26  (wall 24.2s)
+    mpi_p1_alltoallv_vertex_r2           solve   24.630s  iters  26  (wall 25.4s)
+    mpi_p1_alltoallv_edge_r0             solve   24.910s  iters  26  (wall 24.3s)
+    mpi_p1_alltoallv_edge_r1             solve   24.423s  iters  26  (wall 23.7s)
+    mpi_p1_alltoallv_edge_r2             solve   24.931s  iters  26  (wall 24.1s)
+    mpi_p1_overlap_vertex_r0             solve   25.936s  iters  26  (wall 25.7s)
+    mpi_p1_overlap_vertex_r1             solve   24.973s  iters  26  (wall 26.2s)
+    mpi_p1_overlap_vertex_r2             solve   25.043s  iters  26  (wall 24.7s)
+    mpi_p1_overlap_edge_r0               solve   25.081s  iters  26  (wall 24.7s)
+    mpi_p1_overlap_edge_r1               solve   24.837s  iters  26  (wall 24.5s)
+    mpi_p1_overlap_edge_r2               solve   25.376s  iters  26  (wall 25.0s)
+    mpi_p2_allgather_vertex_r0           solve   15.018s  iters  26  (wall 15.6s)
+    mpi_p2_allgather_vertex_r1           solve   15.188s  iters  26  (wall 14.0s)
+    mpi_p2_allgather_vertex_r2           solve   14.666s  iters  26  (wall 15.3s)
+    mpi_p2_allgather_edge_r0             solve   15.050s  iters  26  (wall 14.1s)
+    mpi_p2_allgather_edge_r1             solve   15.281s  iters  26  (wall 15.8s)
+    mpi_p2_allgather_edge_r2             solve   14.861s  iters  26  (wall 13.6s)
+    mpi_p2_alltoallv_vertex_r0           solve   12.084s  iters  26  (wall 13.0s)
+    mpi_p2_alltoallv_vertex_r1           solve   12.427s  iters  26  (wall 13.3s)
+    mpi_p2_alltoallv_vertex_r2           solve   13.066s  iters  26  (wall 12.3s)
+    mpi_p2_alltoallv_edge_r0             solve   12.229s  iters  26  (wall 13.1s)
+    mpi_p2_alltoallv_edge_r1             solve   12.387s  iters  26  (wall 11.6s)
+    mpi_p2_alltoallv_edge_r2             solve   12.834s  iters  26  (wall 13.7s)
+    mpi_p2_overlap_vertex_r0             solve    8.559s  iters  26  (wall 9.7s)
+    mpi_p2_overlap_vertex_r1             solve    8.627s  iters  26  (wall 7.9s)
+    mpi_p2_overlap_vertex_r2             solve    8.899s  iters  26  (wall 10.0s)
+    mpi_p2_overlap_edge_r0               solve    8.745s  iters  26  (wall 9.9s)
+    mpi_p2_overlap_edge_r1               solve    8.647s  iters  26  (wall 8.1s)
+    mpi_p2_overlap_edge_r2               solve    8.007s  iters  26  (wall 9.1s)
+    mpi_p3_allgather_vertex_r0           solve   11.924s  iters  26  (wall 12.4s)
+    mpi_p3_allgather_vertex_r1           solve   12.358s  iters  26  (wall 11.3s)
+    mpi_p3_allgather_vertex_r2           solve   11.890s  iters  26  (wall 12.4s)
+    mpi_p3_allgather_edge_r0             solve   13.584s  iters  26  (wall 14.2s)
+    mpi_p3_allgather_edge_r1             solve   11.812s  iters  26  (wall 10.5s)
+    mpi_p3_allgather_edge_r2             solve   11.738s  iters  26  (wall 12.3s)
+    mpi_p3_alltoallv_vertex_r0           solve    9.066s  iters  26  (wall 10.0s)
+    mpi_p3_alltoallv_vertex_r1           solve    9.415s  iters  26  (wall 10.4s)
+    mpi_p3_alltoallv_vertex_r2           solve    9.163s  iters  26  (wall 10.2s)
+    mpi_p3_alltoallv_edge_r0             solve    9.040s  iters  26  (wall 10.0s)
+    mpi_p3_alltoallv_edge_r1             solve    9.299s  iters  26  (wall 8.5s)
+    mpi_p3_alltoallv_edge_r2             solve    9.014s  iters  26  (wall 10.0s)
+    mpi_p3_overlap_vertex_r0             solve    6.430s  iters  26  (wall 7.6s)
+    mpi_p3_overlap_vertex_r1             solve    6.586s  iters  26  (wall 6.0s)
+    mpi_p3_overlap_vertex_r2             solve    6.135s  iters  26  (wall 7.3s)
+    mpi_p3_overlap_edge_r0               solve    6.150s  iters  26  (wall 7.3s)
+    mpi_p3_overlap_edge_r1               solve    6.504s  iters  26  (wall 7.6s)
+    mpi_p3_overlap_edge_r2               solve    6.993s  iters  26  (wall 6.7s)
+    mpi_p4_allgather_vertex_r0           solve   10.270s  iters  26  (wall 10.8s)
+    mpi_p4_allgather_vertex_r1           solve   10.498s  iters  26  (wall 11.0s)
+    mpi_p4_allgather_vertex_r2           solve    9.840s  iters  26  (wall 8.6s)
+    mpi_p4_allgather_edge_r0             solve   10.523s  iters  26  (wall 11.1s)
+    mpi_p4_allgather_edge_r1             solve   11.309s  iters  26  (wall 11.9s)
+    mpi_p4_allgather_edge_r2             solve   10.564s  iters  26  (wall 9.3s)
+    mpi_p4_alltoallv_vertex_r0           solve    7.358s  iters  26  (wall 8.4s)
+    mpi_p4_alltoallv_vertex_r1           solve    7.998s  iters  26  (wall 9.0s)
+    mpi_p4_alltoallv_vertex_r2           solve    8.176s  iters  26  (wall 9.2s)
+    mpi_p4_alltoallv_edge_r0             solve    8.009s  iters  26  (wall 7.4s)
+    mpi_p4_alltoallv_edge_r1             solve    8.090s  iters  26  (wall 9.1s)
+    mpi_p4_alltoallv_edge_r2             solve    8.164s  iters  26  (wall 9.2s)
+    mpi_p4_overlap_vertex_r0             solve    5.954s  iters  26  (wall 7.1s)
+    mpi_p4_overlap_vertex_r1             solve    6.423s  iters  26  (wall 5.8s)
+    mpi_p4_overlap_vertex_r2             solve    6.223s  iters  26  (wall 7.5s)
+    mpi_p4_overlap_edge_r0               solve    6.276s  iters  26  (wall 7.5s)
+    mpi_p4_overlap_edge_r1               solve    6.216s  iters  26  (wall 7.4s)
+    mpi_p4_overlap_edge_r2               solve    5.913s  iters  26  (wall 5.4s)
+    mpi_p6_allgather_vertex_r0           solve    9.060s  iters  26  (wall 9.6s)
+    mpi_p6_allgather_vertex_r1           solve    9.065s  iters  26  (wall 9.7s)
+    mpi_p6_allgather_vertex_r2           solve    9.082s  iters  26  (wall 7.9s)
+    mpi_p6_allgather_edge_r0             solve    9.198s  iters  26  (wall 9.7s)
+    mpi_p6_allgather_edge_r1             solve    9.143s  iters  26  (wall 9.7s)
+    mpi_p6_allgather_edge_r2             solve    9.034s  iters  26  (wall 9.6s)
+    mpi_p6_alltoallv_vertex_r0           solve    6.804s  iters  26  (wall 6.2s)
+    mpi_p6_alltoallv_vertex_r1           solve    6.648s  iters  26  (wall 7.8s)
+    mpi_p6_alltoallv_vertex_r2           solve    6.911s  iters  26  (wall 8.0s)
+    mpi_p6_alltoallv_edge_r0             solve    6.997s  iters  26  (wall 8.3s)
+    mpi_p6_alltoallv_edge_r1             solve    6.725s  iters  26  (wall 6.1s)
+    mpi_p6_alltoallv_edge_r2             solve    7.012s  iters  26  (wall 8.1s)
+    mpi_p6_overlap_vertex_r0             solve    6.059s  iters  26  (wall 7.4s)
+    mpi_p6_overlap_vertex_r1             solve    6.292s  iters  26  (wall 7.7s)
+    mpi_p6_overlap_vertex_r2             solve    6.177s  iters  26  (wall 5.7s)
+    mpi_p6_overlap_edge_r0               solve    5.947s  iters  26  (wall 7.2s)
+    mpi_p6_overlap_edge_r1               solve    6.041s  iters  26  (wall 7.4s)
+    mpi_p6_overlap_edge_r2               solve    6.115s  iters  26  (wall 7.4s)
+    mpi_p8_allgather_vertex_r0           solve    9.403s  iters  26  (wall 8.2s)
+    mpi_p8_allgather_vertex_r1           solve    9.354s  iters  26  (wall 9.9s)
+    mpi_p8_allgather_vertex_r2           solve    9.423s  iters  26  (wall 10.0s)
+    mpi_p8_allgather_edge_r0             solve    9.381s  iters  26  (wall 8.3s)
+    mpi_p8_allgather_edge_r1             solve    9.167s  iters  26  (wall 9.8s)
+    mpi_p8_allgather_edge_r2             solve    9.575s  iters  26  (wall 10.2s)
+    mpi_p8_alltoallv_vertex_r0           solve    7.084s  iters  26  (wall 8.4s)
+    mpi_p8_alltoallv_vertex_r1           solve    6.774s  iters  26  (wall 6.3s)
+    mpi_p8_alltoallv_vertex_r2           solve    7.104s  iters  26  (wall 8.4s)
+    mpi_p8_alltoallv_edge_r0             solve    6.879s  iters  26  (wall 8.1s)
+    mpi_p8_alltoallv_edge_r1             solve    7.120s  iters  26  (wall 8.4s)
+    mpi_p8_alltoallv_edge_r2             solve    6.823s  iters  26  (wall 6.3s)
+    mpi_p8_overlap_vertex_r0             solve    6.313s  iters  26  (wall 7.7s)
+    mpi_p8_overlap_vertex_r1             solve    6.369s  iters  26  (wall 7.7s)
+    mpi_p8_overlap_vertex_r2             solve    6.182s  iters  26  (wall 7.6s)
+    mpi_p8_overlap_edge_r0               solve    6.510s  iters  26  (wall 6.6s)
+    mpi_p8_overlap_edge_r1               solve    6.578s  iters  26  (wall 8.5s)
+    mpi_p8_overlap_edge_r2               solve    6.351s  iters  26  (wall 7.7s)
+== weak scaling (R-MAT, ~constant edges per process)
+    mpi_p1_rmat-20_r0                    solve    2.137s  iters  30  (wall 2.7s)
+    mpi_p1_rmat-20_r1                    solve    2.149s  iters  30  (wall 2.7s)
+    mpi_p1_rmat-20_r2                    solve    2.742s  iters  30  (wall 3.2s)
+    mpi_p2_rmat-21_r0                    solve    4.816s  iters  30  (wall 3.8s)
+    mpi_p2_rmat-21_r1                    solve    5.318s  iters  30  (wall 5.9s)
+    mpi_p2_rmat-21_r2                    solve    4.879s  iters  30  (wall 5.5s)
+    mpi_p4_rmat-22_r0                    solve    8.682s  iters  30  (wall 9.7s)
+    mpi_p4_rmat-22_r1                    solve    9.176s  iters  30  (wall 8.6s)
+    mpi_p4_rmat-22_r2                    solve    9.377s  iters  30  (wall 10.4s)
+    mpi_p8_rmat-23_r0                    solve   19.087s  iters  30  (wall 20.2s)
+    mpi_p8_rmat-23_r1                    solve   18.728s  iters  30  (wall 21.2s)
+    mpi_p8_rmat-23_r2                    solve   18.908s  iters  30  (wall 19.8s)
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/bench.csv (456 runs) and /mnt/c/Users/DELL/Desktop/pdc-project/results/summary.csv (152 configs)
+== partition calibration
+web-Google,4,0,0.4599,1.607
+web-Google,4,1,0.4476,1.500
+web-Google,4,2,0.3804,1.269
+web-Google,4,3,0.3639,1.240
+web-Google,4,4,0.3772,1.201
+web-Google,4,6,0.3483,1.126
+web-Google,4,8,0.3465,1.170
+web-BerkStan,4,0,0.2031,1.239
+web-BerkStan,4,1,0.2108,1.196
+web-BerkStan,4,2,0.1944,1.108
+web-BerkStan,4,3,0.1976,1.125
+web-BerkStan,4,4,0.2113,1.106
+web-BerkStan,4,6,0.2047,1.097
+web-BerkStan,4,8,0.2041,1.037
+soc-LiveJournal1,4,0,7.3995,1.219
+soc-LiveJournal1,4,1,7.1232,1.144
+soc-LiveJournal1,4,2,6.9535,1.065
+soc-LiveJournal1,4,3,6.8746,1.042
+soc-LiveJournal1,4,4,6.8647,1.031
+soc-LiveJournal1,4,6,6.6222,1.059
+soc-LiveJournal1,4,8,6.8774,1.103
+== plots and dashboard
+findfont: Failed to find font weight semibold for DejaVu Sans, now using 700.
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/speedup_efficiency.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/execution_time.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/comm_modes.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/time_breakdown.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/comm_volume.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/load_imbalance.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/per_rank_edges.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/convergence.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/results/plots/weak_scaling.png
+wrote /mnt/c/Users/DELL/Desktop/pdc-project/dashboard/index.html
+ALL DONE
