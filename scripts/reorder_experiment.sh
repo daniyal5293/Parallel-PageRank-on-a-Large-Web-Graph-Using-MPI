@@ -6,9 +6,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DATA_DIR="${DATA_DIR:-$HOME/pdc-data}"
-OUT=results/reorder.csv
+RESULTS_DIR="${RESULTS_DIR:-results}"
+OUT="$RESULTS_DIR/reorder.csv"
+mkdir -p "$RESULTS_DIR"
 make -s build/reorder build/pagerank_seq build/pagerank_mpi
-echo "dataset,order,procs,t_solve_median" > "$OUT"
+echo "dataset,order,procs,t_solve_median" > "$OUT.tmp"
 solve() { python3 -c "import json; print(json.load(open('/tmp/reorder_run.json'))['t_solve'])"; }
 for ds in web-Google soc-LiveJournal1; do
     [ -s "$DATA_DIR/$ds-degree.bin" ] || ./build/reorder "$DATA_DIR/$ds.bin" "$DATA_DIR/$ds-degree.bin"
@@ -26,7 +28,8 @@ for ds in web-Google soc-LiveJournal1; do
                 times+=("$(solve)")
             done
             med=$(printf '%s\n' "${times[@]}" | sort -g | sed -n 2p)
-            echo "$ds,$order,$p,$med" | tee -a "$OUT"
+            echo "$ds,$order,$p,$med" | tee -a "$OUT.tmp"
         done
     done
 done
+mv "$OUT.tmp" "$OUT"   # only a complete file replaces the old one

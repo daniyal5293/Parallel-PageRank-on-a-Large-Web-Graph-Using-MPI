@@ -109,14 +109,26 @@ Common options: `--tol 1e-9`, `--max-iter 200`, `--iters K` (fixed iteration cou
 `--topk 10`, `--out ranks.f64` (binary float64 vector), `--json run.json` (machine-readable
 summary) and `--verbose` (prints the residual every iteration).
 
+## Viva demo and study guide
+
+* `bash scripts/demo.sh` runs a one-minute live demo: the sequential program, then all three MPI
+  strategies with 4 processes, then vertex vs edge partitioning. It writes nothing to `results/`.
+* [PROJECT_GUIDE.txt](PROJECT_GUIDE.txt) explains the whole project from zero: concepts,
+  architecture, every file, how to run it, results and likely viva questions.
+
 ## Reproducing the results
 
 Run the benchmarks **on AC power with the lid open**. On battery the CPU is throttled, and standby
 pauses the WSL VM in the middle of runs.
 
 ```bash
-bash scripts/run_all.sh                # tests, full sweep, calibration, platform probe, plots, dashboard (~1.5 h)
+RESULTS_DIR=results-check bash scripts/run_all.sh   # fresh full run into its own folder (~80 min)
 ```
+
+The `RESULTS_DIR` folder keeps a check run separate: `results/` and `dashboard/index.html` stay
+untouched, and the new dashboard goes to `results-check/dashboard.html`. The pipeline is safe to
+interrupt. Running the same command again skips every finished run. The dashboard is only replaced
+in the last step, and only by a complete file.
 
 The individual steps are:
 

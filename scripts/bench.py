@@ -6,6 +6,7 @@ process counts, communication modes and partitioners, then aggregates.
   python scripts/bench.py --aggregate     # only rebuild the CSV files from results/runs/
 
 Outputs
+  (all under results/, or under $RESULTS_DIR when that is set)
   results/runs/<dataset>/<config>_r<k>.json   raw output of every run
   results/bench.csv                           one row per run
   results/summary.csv                         median per configuration + speedup/efficiency
@@ -23,7 +24,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RESULTS = ROOT / "results"
+RESULTS = Path(os.environ.get("RESULTS_DIR", ROOT / "results")).resolve()
 RUNS = RESULTS / "runs"
 BUILD = ROOT / "build"
 DATA_DIR = Path(os.environ.get("DATA_DIR", Path.home() / "pdc-data"))
@@ -144,7 +145,7 @@ def load_runs():
             "t_exchange_max": d["t_exchange_max"], "t_exchange_avg": d["t_exchange_avg"],
             "t_reduce_max": d["t_reduce_max"], "t_reduce_avg": d["t_reduce_avg"],
             "imbalance": d["imbalance"], "bytes_per_iter": d["bytes_per_iter"], "mteps": d["mteps"],
-            "file": str(path.relative_to(RESULTS)),
+            "file": str(path.relative_to(RESULTS).as_posix()),
         })
     return rows
 
@@ -201,7 +202,7 @@ def main():
     ap.add_argument("--timeout", type=int, default=1800)
     args = ap.parse_args()
 
-    RESULTS.mkdir(exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
     if not args.aggregate:
         if not (BUILD / "pagerank_mpi").exists():
             sys.exit("build first: make")

@@ -1,0 +1,831 @@
+=====================================================================================
+   PARALLEL PAGERANK ON LARGE WEB GRAPHS USING MPI  -  COMPLETE PROJECT GUIDE
+   (study guide for the viva: what the project does, how it works, every folder,
+    every file, how to run it, what the results mean, and likely viva questions)
+=====================================================================================
+
+Group: Daniyal Ahmed Khan (23K-3039), Abdul Hadi (23K-3041),
+       Taha Ali Khan (23K-3005), Muhammad Tahseen (23K-3040)
+
+Project folder (Windows):  C:\Users\DELL\Desktop\pdc-project
+Same folder inside Ubuntu: /mnt/c/Users/DELL/Desktop/pdc-project
+Graph data (inside Ubuntu): ~/pdc-data        (= /home/pdc/pdc-data)
+Written report:            https://claude.ai/artifact/2BpqMfC7rgxez2RoZSQs8P
+Online dashboard:          https://claude.ai/artifact/ChZAyC3RzgbBVhVeNZ2bjS
+Local dashboard:           dashboard\index.html (double-click to open in a browser)
+
+HOW TO READ THIS GUIDE
+  Part 1  is the whole project on one page. Read it first.
+  Part 2  teaches the background ideas (PageRank, MPI, speedup...). No prior knowledge assumed.
+  Part 3  is the architecture: how the pieces fit together.
+  Part 4  explains the graph file format with a tiny worked example.
+  Part 5  is the map of every folder and file.
+  Part 6  walks through the code, file by file.
+  Part 7  explains the parallel algorithm step by step with a 2-process example.
+  Part 8  lists every MPI function used and why.
+  Part 9  presents the experiments and results, and why they came out that way.
+  Part 10 explains how to run everything, how long it takes, and what happens if you stop it.
+  Part 11 compares what was planned with what was done.
+  Part 12 has likely viva questions with answers.
+  Part 13 is a glossary.
+
+
+=====================================================================================
+PART 1.  THE PROJECT ON ONE PAGE
+=====================================================================================
+
+WHAT: PageRank gives every page of a web graph a score of how "important" it is, based on
+      how many important pages link to it. Google built its search engine on it.
+      We wrote it twice in C++:
+        * pagerank_seq  - a normal single-core (sequential) program, the baseline.
+        * pagerank_mpi  - a parallel program using MPI. It splits the graph between several
+                          processes that work at the same time and exchange messages.
+
+WHY:  On graphs with millions of nodes and edges, PageRank needs many passes over all
+      the edges (90-106 passes for our real graphs). That takes seconds to minutes, so
+      splitting the work over several CPU cores should make it faster. We measure how much
+      faster (speedup) and how well each core is used (efficiency).
+
+DATA: Three real graphs from the Stanford SNAP collection:
+        web-Google       875,713 nodes    5,105,039 edges  (web pages)
+        web-BerkStan     685,230 nodes    7,600,595 edges  (web pages)
+        soc-LiveJournal1 4,846,609 nodes 68,475,391 edges  (social network)
+      plus synthetic "R-MAT" graphs we generate ourselves (rmat-20 to rmat-23, up to
+      131 million edges).
+
+HOW THE PARALLEL VERSION WORKS (in 5 lines):
+  1. The nodes are split into P contiguous blocks, one block per MPI process.
+  2. Each process reads only its own block of the graph file (parallel I/O, MPI-IO).
+  3. Each iteration, each process needs the ranks of some nodes owned by others
+     ("ghost" nodes). Those values are exchanged with an MPI collective (Alltoallv).
+  4. Each process computes the new ranks of its own nodes.
+  5. One MPI_Allreduce adds up the total change. When it is tiny (< 1e-9), stop and
+     collect the top-10 nodes.
+
+RESULTS (laptop: Intel i5-1145G7, 4 cores / 8 threads):
+        Graph             Sequential   Best speedup        Speedup with 4 processes
+        rmat-22           24.85 s      4.11x (6 procs)     4.00x  (100% efficiency)
+        web-BerkStan      1.13 s       1.91x (6 procs)     1.79x
+        soc-LiveJournal1  23.16 s      1.36x (2 procs)     1.29x
+        web-Google        1.45 s       1.33x (8 procs)     1.17x
+  * All 226 correctness tests pass. The MPI answer equals the sequential answer
+    (difference ~1e-13) and equals the networkx library's answer.
+  * Sending only the needed "ghost" values moves 64-90% less data than sending everything.
+  * The real graphs are limited by the laptop's MEMORY BANDWIDTH. We proved this with a
+    "platform probe": a pure streaming-through-memory test does not get faster at all
+    with more cores (about 13 GB/s with 1 core and with 8). This is the key insight for
+    the viva.
+
+
+=====================================================================================
+PART 2.  BACKGROUND YOU NEED (explained from zero)
+=====================================================================================
+
+2.1 GRAPHS
+  A graph is a set of NODES (also called vertices) connected by EDGES.
+  Our graphs are DIRECTED: an edge u -> v means "page u links to page v".
+    out-degree of u = number of links going OUT of u
+    in-degree  of v = number of links coming INTO v
+  A DANGLING node has out-degree 0 (a page with no outgoing links).
+  N = number of nodes, M = number of edges.
+
+2.2 PAGERANK
+  Imagine a "random surfer" clicking links forever. With probability d = 0.85 she clicks a
+  random link on the current page; with probability 0.15 she gets bored and jumps to a
+  random page anywhere. A page's PageRank = the fraction of time she spends on it in the
+  long run. Pages that many important pages link to get high scores.
+
+  Formula, applied again and again (each round is an "iteration"):
+
+      new_r[v] = (1 - d)/N  +  d * ( SUM over u->v of  r[u] / outdeg[u]   +   D / N )
+
+      * (1-d)/N  : the "random jump" share every page gets.
+      * r[u]/outdeg[u] : page u splits its rank equally among its out-links. We call this
+                         value the CONTRIBUTION of u.
+      * D = total rank sitting on dangling pages. They have no links, so their rank is
+            spread equally over all N pages (the surfer jumps randomly from a dead end).
+            This keeps the total of all ranks equal to exactly 1.
+
+  Start: every page has r = 1/N.
+  Stop:  when the L1 residual  SUM over v of |new_r[v] - r[v]|  is below 1e-9 (tolerance),
+         or after 200 iterations. This method is called POWER ITERATION.
+
+  PULL vs PUSH: we compute new_r[v] by looking at the IN-edges of v ("pull").
+  Advantage: only one place ever writes new_r[v], so no locks or atomic operations are
+  needed. ("Push" would have every u add into its neighbours, causing write conflicts.)
+
+2.3 PARALLEL COMPUTING TERMS
+  * Process: a running program with its OWN memory. MPI runs P copies of the program.
+  * Shared memory (threads, OpenMP) vs DISTRIBUTED memory (MPI): in MPI no process can
+    read another's memory; data moves only through explicit MESSAGES. MPI programs can
+    therefore run on many separate computers (a cluster).
+  * Speedup        S(P) = T_sequential / T_parallel(P).   Ideal: S(P) = P.
+  * Efficiency     E(P) = S(P) / P.                        Ideal: 100%.
+  * Strong scaling: same problem, more processes. Does it get faster?
+  * Weak scaling:  problem grows with the processes (each keeps the same amount of work).
+                   Does the time stay the same?
+  * Amdahl's law: if a fraction s of the work is serial, S(P) <= 1 / (s + (1-s)/P).
+  * Karp-Flatt metric: e = (1/S - 1/P) / (1 - 1/P). It is the "experimentally measured
+    serial fraction". If e is large or grows with P, something besides the code (overhead,
+    a shared resource) limits scaling.
+  * Load imbalance: everyone waits for the slowest process at each synchronisation.
+    We measure it as  slowest compute time / average compute time  (1.0 = perfect).
+  * Superlinear speedup: S(P) > P. This can happen when each process's share of the data
+    fits better in cache memory (we saw it on rmat-22).
+
+2.4 MEMORY, CACHE AND BANDWIDTH (needed to understand our results)
+  * The CPU has small fast caches (L1/L2 per core, 8 MB shared L3 on this CPU). Main memory
+    (RAM) is much slower.
+  * Reading data in order (streaming) is fast. Reading at random addresses causes CACHE
+    MISSES, each fetching a 64-byte block from RAM.
+  * MEMORY BANDWIDTH = how many GB/s the RAM can deliver. ALL cores share it.
+    If one core already uses most of it, extra cores cannot make a memory-heavy program
+    faster. PageRank does almost no arithmetic per edge (one add); it is memory-bound.
+
+2.5 MPI IN ONE PAGE
+  * mpirun -np 4 ./program   starts 4 processes, numbered RANK 0, 1, 2, 3.
+  * MPI_COMM_WORLD is the group of all of them. MPI_Comm_rank / MPI_Comm_size tell a
+    process its number and the total count.
+  * Point-to-point: MPI_Send/MPI_Recv between two processes.
+  * COLLECTIVES: every process calls the same function together, e.g.
+      MPI_Bcast      - one process sends the same data to all.
+      MPI_Gather     - everyone sends a piece to one process.
+      MPI_Allgather(v) - everyone gets everyone's pieces ("v" = pieces of different sizes).
+      MPI_Alltoall(v)  - every process sends a different piece to every other process.
+      MPI_Reduce / MPI_Allreduce - combine values (e.g. SUM) to one / to everyone.
+  * Non-blocking versions (MPI_Ialltoallv) start the operation and return immediately;
+    MPI_Wait finishes it later. This allows doing work while data is in transit (overlap).
+  * MPI-IO (MPI_File_open, MPI_File_read_at ...) lets every process read/write its own
+    part of one shared file in parallel.
+  * We use Open MPI 4.1.6. On one machine its messages are copies through shared memory.
+
+
+=====================================================================================
+PART 3.  ARCHITECTURE (how the pieces fit together)
+=====================================================================================
+
+3.1 THE DATA PIPELINE (left to right)
+
+   Internet                    Ubuntu (WSL2)
+   --------                    -------------------------------------------------------------
+   SNAP / KONECT  --download-->  raw/*.tar.bz2 (text edge lists)
+                                    |
+                                    | convert  (C++)      gen_rmat (C++) makes R-MAT graphs
+                                    v                          |
+                                 ~/pdc-data/<graph>.bin  <-----+   (binary CSR graph files)
+                                    |
+              +---------------------+------------------------+
+              |                                              |
+        pagerank_seq (C++)                          mpirun -np P pagerank_mpi (C++, MPI)
+              |                                              |
+              +-------------> one JSON file per run <--------+   (times, ranks, top-10 ...)
+                                    |
+                               bench.py (Python) runs everything, collects all JSON
+                                    |
+                         results/bench.csv, results/summary.csv
+                                    |
+              +---------------------+------------------------+
+              |                     |                        |
+      plot_results.py       build_dashboard.py         written report
+      results/plots/*.png   dashboard/index.html       (Claude Doc, uses these numbers)
+
+3.2 INSIDE pagerank_mpi (one process, rank q)
+
+   start  -> MPI_Init
+   load   -> open graph file with MPI-IO; rank 0 reads the header, MPI_Bcast to all
+          -> decide block boundaries (vertex- or edge-balanced), MPI_Allgather them
+          -> read ONLY my block's rows of the file (MPI_File_read_at)
+   setup  -> find my ghost nodes; tell their owners which ones I need
+             (MPI_Alltoall + MPI_Alltoallv) ; renumber my edges to a compact local index
+   solve  -> repeat:
+               1 compute contributions of my nodes
+               2 exchange ghost contributions        (MPI_Alltoallv / Allgatherv / Ialltoallv)
+               3 pull over my in-edges -> new ranks of my nodes
+               4 MPI_Allreduce(residual, dangling mass)   -> everyone knows if converged
+             until residual < 1e-9
+   finish -> local top-10, MPI_Gather to rank 0, rank 0 merges and prints
+          -> MPI_Gather of per-process timings -> rank 0 writes the JSON summary
+          -> MPI_Finalize
+
+3.3 WHERE IT RUNS
+  Windows 11 laptop -> WSL2 (a Linux virtual machine built into Windows) -> Ubuntu 24.04 ->
+  g++ 13 compiler + Open MPI 4.1.6 + Python 3 (numpy, pandas, matplotlib, networkx).
+  The code lives in the Windows folder; Ubuntu sees it at /mnt/c/... . The big graph files
+  live inside Ubuntu (~/pdc-data) because reading /mnt/c from Linux is slow.
+
+
+=====================================================================================
+PART 4.  THE BINARY GRAPH FORMAT (CSR) WITH A TINY EXAMPLE
+=====================================================================================
+
+  Text input (tests/graphs/classic.txt):   0->1, 0->2, 1->2, 2->0, 3->2
+
+  We store, for every node v, the list of nodes that point INTO v (its in-edges):
+      v=0: {2}      v=1: {0}      v=2: {0, 1, 3}      v=3: {}  (nobody links to 3)
+
+  CSR = "Compressed Sparse Row": all lists glued into one array + an offset array:
+      in_src  = [ 2 | 0 | 0, 1, 3 ]              (M = 5 entries, uint32 each)
+      in_off  = [ 0, 1, 2, 5, 5 ]                (N+1 = 5 entries, uint64 each)
+                  in-edges of v are in_src[ in_off[v] .. in_off[v+1]-1 ]
+      out_deg = [ 2, 1, 1, 1 ]                   (node 0 has 2 out-links, others 1)
+
+  The .bin file is:  header(24 bytes: "PRCSR1", N, M) + in_off + in_src + out_deg.
+  Because the arrays sit at known byte positions, an MPI process can jump straight to
+  "rows 400,000 to 600,000" and read only those (that is how parallel I/O works here).
+  A side file <graph>.bin.ids stores the original node id of each compact id, so results
+  show real ids.
+
+
+=====================================================================================
+PART 5.  MAP OF EVERY FOLDER AND FILE
+=====================================================================================
+
+pdc-project/
+|
+|-- README.md               Short project description, setup, how to run, results table.
+|-- PROJECT_GUIDE.txt       This file.
+|-- Makefile                Build rules. "make" compiles all programs into build/,
+|                           "make test" runs the test suite, "make clean" deletes build/.
+|                           Uses g++ for normal programs and mpicxx for MPI programs,
+|                           with -O3 -march=native (full optimisation for this CPU).
+|-- .gitignore              Tells git to ignore build/, data/, temporary files.
+|-- .gitattributes          Forces Linux line endings (LF) so bash scripts work in Ubuntu.
+|
+|-- include/                C++ HEADER files shared by all programs
+|   |-- graph.hpp           The binary CSR file format: reading, writing, building a graph
+|   |                       from sorted edges, the .ids side file (IdMap, read_ids).
+|   |-- pagerank.hpp        PageRank parameters (damping 0.85, tolerance 1e-9, max 200
+|   |                       iterations), top-k selection with a heap, printing the top-k.
+|   |-- cli.hpp             Tiny command-line parser ("--graph x --mode y").
+|   |-- json.hpp            Tiny JSON writer, used to save each run's results.
+|   `-- timer.hpp           Wall-clock timer for the non-MPI programs.
+|
+|-- src/                    C++ SOURCE files, one program each
+|   |-- pagerank_seq.cpp    Sequential PageRank (the baseline for speedup).
+|   |-- pagerank_mpi.cpp    *** The MPI PageRank - the heart of the project. ***
+|   |-- convert.cpp         Converts a text edge list (SNAP/KONECT) into the .bin format.
+|   |-- gen_rmat.cpp        Generates synthetic R-MAT power-law graphs of any size.
+|   |-- reorder.cpp         Relabels nodes by out-degree (a cache-locality experiment).
+|   `-- platform_probe.cpp  Measures the hardware's own limits (arithmetic, memory
+|                           streaming, random reads) with 1-8 MPI processes.
+|
+|-- tests/                  Correctness tests (run with: make test)
+|   |-- run_tests.sh        The test driver: 226 checks (see Part 6.4).
+|   |-- check_networkx.py   Compares our answer with the networkx library's PageRank.
+|   |-- compare_ranks.py    Compares two rank vectors and two top-k lists.
+|   `-- graphs/*.txt        Four tiny hand-made graphs (cycle, star, classic, mixed).
+|
+|-- scripts/                Automation (bash + Python)
+|   |-- setup_wsl.sh        Installs compiler, Open MPI, tools in Ubuntu; makes the venv.
+|   |-- make_venv.sh        Creates the Python environment ~/.venvs/pdc.
+|   |-- download_datasets.sh Downloads the 3 real graphs (SNAP, falls back to KONECT).
+|   |-- prepare_datasets.sh Converts them to .bin and generates rmat-20..23.
+|   |-- bench.py            Runs ALL benchmark combinations, saves JSON per run, builds
+|   |                       results/bench.csv and results/summary.csv. Resumable.
+|   |-- calibrate_partition.sh  Finds the best vertex weight w for edge partitioning.
+|   |-- probe_platform.sh   Runs platform_probe for P = 1..8 -> results/platform.csv.
+|   |-- reorder_experiment.sh  Natural vs degree node order experiment.
+|   |-- plot_results.py     Draws the 10 PNG charts in results/plots/.
+|   |-- build_dashboard.py  Puts all results into dashboard/index.html.
+|   |-- run_all.sh          Runs the whole pipeline in order (tests -> ... -> dashboard).
+|   `-- demo.sh             1-minute live demo for the viva (writes nothing to results/).
+|
+|-- results/                Everything measured (these ARE the project's results)
+|   |-- runs/<graph>/*.json One JSON per single run, e.g. mpi_p4_alltoallv_edge_r0.json
+|   |                       = P=4, alltoallv mode, edge partition, repeat 0.
+|   |   `-- weak/           Weak-scaling runs.
+|   |-- bench.csv           One row per run (456 rows).
+|   |-- summary.csv         Median of the 3 repeats per configuration + speedup,
+|   |                       efficiency, Karp-Flatt, imbalance, MB/iteration, MTEPS.
+|   |-- system.json         CPU, memory, OS, MPI and compiler versions.
+|   |-- calibration.csv     Vertex-weight calibration results.
+|   |-- platform.csv        Hardware probe results.
+|   |-- reorder.csv         Node-order experiment results.
+|   |-- tests.log           Output of the last test run (226 passed).
+|   |-- run_all.log         Log of the full pipeline run.
+|   `-- plots/*.png         10 charts for slides/report (speedup, efficiency, breakdown...).
+|
+|-- dashboard/
+|   |-- template.html       The dashboard page design (HTML/CSS/JavaScript) with a
+|   |                       placeholder for data.
+|   |-- index.html          GENERATED: template + all results. Open in a browser.
+|   `-- vendor/chart.umd.min.js  Offline copy of the Chart.js charting library.
+|
+`-- build/                  GENERATED by "make": the 6 compiled programs. Safe to delete.
+
+Outside the project folder (inside Ubuntu):
+  ~/pdc-data/raw/           downloaded archives (.tar.bz2)
+  ~/pdc-data/*.bin          converted graphs, *.bin.ids original-id maps
+  ~/.venvs/pdc/             Python environment (numpy, pandas, matplotlib, networkx, scipy)
+
+
+=====================================================================================
+PART 6.  CODE WALKTHROUGH
+=====================================================================================
+
+6.1 include/ (shared helpers)
+
+  graph.hpp
+    struct Header {magic "PRCSR1", n, m}    - first 24 bytes of every .bin file.
+    in_off_pos / in_src_pos / out_deg_pos   - byte position of each array in the file
+                                              (used by MPI-IO to jump to a slice).
+    struct Graph {n, m, in_off, in_src, out_deg}
+    read_graph(path)                        - loads a whole .bin (used by the sequential code).
+    write_graph(path, g)
+    graph_from_keys(n, keys)                - builds the CSR from edges packed as
+                                              64-bit numbers (dst << 32 | src). Sorting those
+                                              numbers sorts edges by destination, which is
+                                              exactly the CSR order. Clever trick, fast.
+    read_ids / IdMap                        - compact id -> original id.
+
+  pagerank.hpp
+    struct Params      damping 0.85, tol 1e-9, max_iter 200, fixed_iters (--iters K), topk.
+    top_k(...)         keeps the k best scores with a small heap: O(n log k), not a full sort.
+    merge_top_k(...)   rank 0 merges the candidates from all processes.
+    print_top_k / top_k_json   output.
+
+  cli.hpp   Args: turns "--graph x --tol 1e-9" into a lookup table.
+  json.hpp  JsonObject: builds {"key": value, ...} text for the run summaries.
+  timer.hpp wall_time(): seconds from a steady clock.
+
+6.2 src/pagerank_seq.cpp  (sequential baseline, ~120 lines)
+  1. Read the whole graph.
+  2. inv_deg[v] = 1/outdeg[v] (0 for dangling) - precomputed so the loop multiplies
+     instead of divides.
+  3. Loop over iterations:
+       contrib[u] = r[u] * inv_deg[u]                 for all u
+       base = (1-d)/N + d*D/N                          (random jump + dangling share)
+       for each v: sum contrib of its in-edges; new = base + d*sum;
+                   add |new - old| to the residual; if v is dangling add new to next D
+       swap old/new; stop if residual < tol
+  4. Top-10, print, optional --out (binary rank vector) and --json (summary).
+  It uses EXACTLY the same arithmetic and edge order as the MPI version, so any speed
+  difference comes only from parallelism.
+
+6.3 src/pagerank_mpi.cpp  (the MPI program, ~430 lines) - function by function
+  parse_mode()        "allgather" | "alltoallv" | "overlap".
+  read_at()           MPI_File_read_at in chunks <= 1 GiB (MPI counts are 32-bit ints).
+  vertex_partition()  boundaries b[q] = N*q/P  (equal number of nodes per process).
+  edge_partition()    each process q binary-searches the file's in_off array for the node v
+                      where (in-edges before v) + w*v reaches q/P of the total work, reading
+                      single numbers with MPI-IO (about 20 tiny reads). Then MPI_Allgather
+                      shares all boundaries. w = 4 (--vertex-weight) because per-node work
+                      costs about 4x one edge (measured by calibrate_partition.sh).
+  run():
+    LOAD   : MPI_File_open; rank 0 reads the header; MPI_Bcast; compute bounds;
+             each process reads its slice of in_off, in_src (its in-edges) and out_deg.
+    SETUP  : allgather mode -> needs a full-length vector x of size N and the
+               counts/displacements of every block.
+             alltoallv/overlap modes -> ghost discovery:
+               - mark every edge source outside my block in a table ("slot");
+               - list the marked ids in increasing order = my ghosts, already grouped by
+                 owner because blocks are contiguous;
+               - need_counts[q] = how many ghosts I need from process q;
+               - MPI_Alltoall(need_counts -> serve_counts): now every process knows how
+                 many values it must send to each other process;
+               - MPI_Alltoallv(ghost ids): every process learns WHICH of its nodes others
+                 need (serve_idx);
+               - renumber my edges: local source u -> u - lo, ghost -> nloc + slot.
+                 The array x then holds [my nodes | my ghosts] contiguously, which is
+                 smaller than N and better for the cache.
+             overlap mode additionally splits each node's in-edges into "local source"
+             edges and "ghost source" edges (two small CSRs).
+             Initial dangling mass with MPI_Allreduce.
+    SOLVE  : each iteration
+               t0: x_local[v] = r[v]*inv_deg[v]; pack send_buf with requested values
+               exchange:
+                 allgather -> MPI_Allgatherv(MPI_IN_PLACE ...) fills all of x
+                 alltoallv -> MPI_Alltoallv(send_buf -> x[nloc ...])  (ghost values)
+                 overlap   -> MPI_Ialltoallv starts; meanwhile sum local-source edges,
+                              calling MPI_Test every 1024 nodes to push progress;
+                              MPI_Wait; then add ghost-source edges
+               pull: new r[v] = base + d*sum   (finish_vertex lambda), residual, dangling
+               MPI_Allreduce of 2 numbers {residual, dangling} -> same values everywhere
+               every phase is timed: compute / exchange / reduce
+    RESULTS: local top-k -> MPI_Gather to rank 0 -> merge; MPI_Reduce of the rank sum
+             (should be 1.0); optional --out written with collective MPI_File_write_at_all;
+             MPI_Gather of 11 statistics per process; rank 0 prints the table and the JSON.
+  main(): MPI_Init, run(), on any error MPI_Abort (kills all processes cleanly), MPI_Finalize.
+
+6.4 tests/  (226 checks, about 3 minutes)
+  1. Builds 6 test graphs: 4 hand-made (4-cycle where every node must be exactly 0.25;
+     star with a dangling hub; textbook 4-page example; "mixed" with sparse ids, duplicate
+     edge, self-loop, dangling and source-only nodes) + 2 small R-MAT graphs.
+  2. Sequential vs networkx.pagerank on all 6 (max L1 difference 7.2e-12).
+  3. MPI vs sequential for every graph x 3 modes x 2 partitions x P in {1,2,3,4,5,8},
+     with a fixed 60 iterations so both do identical work: rank vectors equal within
+     1e-12 and the same top-k list. P=5 and P=8 on a 4-node graph means some processes
+     own NO nodes - tests that edge case.
+  4. Convergence: MPI stops at the same iteration as sequential, in all 3 modes.
+
+6.5 The other C++ programs
+  convert.cpp      reads the edge list character by character (fast, handles comments '#'
+                   or '%', tabs, extra columns), remaps ids to 0..N-1, removes duplicate
+                   edges, keeps self-loops, builds the CSR, writes .bin and .bin.ids.
+  gen_rmat.cpp     R-MAT: each edge picks one of 4 quadrants of the adjacency matrix,
+                   level by level, with probabilities a=0.57, b=0.19, c=0.19, d=0.05
+                   (Graph500 values) -> realistic skewed "power-law" graphs. Node labels are
+                   then randomly shuffled so big nodes are not all at the start.
+  reorder.cpp      sorts nodes by out-degree (most-linking first) and rebuilds the file.
+  platform_probe.cpp  three fixed-size kernels split over P processes:
+                   compute (multiply-adds, no memory), stream (a[i]=b[i]+3*c[i] over 384 MB),
+                   gather (random reads into a 32 MB table, like PageRank's reads).
+
+6.6 scripts/  (Python and bash)
+  bench.py         for each graph: 3 sequential runs; then every P x mode x partition x
+                   3 repeats; then weak scaling. Runs with "mpirun --map-by core
+                   --bind-to core" (one process per physical core) and, above 4 processes,
+                   "--use-hwthread-cpus --bind-to hwthread" (hyper-threads). Skips runs whose
+                   JSON already exists (resumable). Then aggregate(): medians, speedup,
+                   efficiency, Karp-Flatt -> CSV files.
+  plot_results.py  matplotlib charts (validated colour palette, colour-blind safe order).
+  build_dashboard.py  reads all results, inserts them as JSON into template.html.
+  run_all.sh       the whole pipeline. RESULTS_DIR=folder sends output to another folder.
+
+
+=====================================================================================
+PART 7.  THE PARALLEL ALGORITHM, STEP BY STEP, WITH 2 PROCESSES
+=====================================================================================
+
+  Graph (from Part 4): 0->1, 0->2, 1->2, 2->0, 3->2.  P = 2, vertex partition:
+     Process 0 owns nodes {0, 1}      Process 1 owns nodes {2, 3}
+
+  Process 0's in-edges:  0<-2,  1<-0          sources outside my block: {2}   = my ghosts
+  Process 1's in-edges:  2<-0, 2<-1, 2<-3     sources outside my block: {0,1} = my ghosts
+
+  SETUP (once):
+    P0 tells P1 "I need node 2";  P1 tells P0 "I need nodes 0 and 1".
+    (MPI_Alltoall for the counts, MPI_Alltoallv for the ids.)
+
+  EVERY ITERATION:
+    1. P0 computes contrib[0], contrib[1];  P1 computes contrib[2], contrib[3].
+    2. Exchange (MPI_Alltoallv):  P0 sends contrib[0], contrib[1] to P1;
+                                  P1 sends contrib[2] to P0.
+       Note contrib[3] is never sent: nobody needs it. With Allgatherv, everything would
+       be sent to everyone. On real graphs this saves 64-90% of the traffic.
+    3. P0 computes new r[0] (from contrib[2]) and new r[1] (from contrib[0]).
+       P1 computes new r[2] (from contrib[0], contrib[1], contrib[3]) and new r[3].
+    4. Each process sums its |new - old| and its dangling rank; MPI_Allreduce adds the
+       two numbers over all processes, so all of them see the same total residual and
+       decide to stop at the same iteration.
+
+  WHY EDGE PARTITIONING: in real graphs some blocks of nodes have far more in-edges than
+  others. Equal node counts then means unequal work, and everyone waits for the slowest.
+  The edge-balanced split equalises (in-edges + 4 x nodes) instead.
+
+  WHY OVERLAP CAN HELP: while the ghost values are travelling, a process can already add up
+  the edges whose sources are its own nodes. In our runs the bigger win was a different
+  effect: splitting the edges into "local" and "ghost" passes makes each pass read from a
+  smaller array, which fits the cache better (cache blocking). That is why rmat-22 with
+  overlap even beat the "ideal" line at 2-3 processes (superlinear speedup).
+
+
+=====================================================================================
+PART 8.  EVERY MPI FUNCTION WE USE, AND WHY
+=====================================================================================
+
+  MPI_Init / MPI_Finalize      start and end MPI.
+  MPI_Comm_rank / MPI_Comm_size   "who am I" and "how many of us".
+  MPI_Barrier                  line everyone up before starting a timer (fair timing).
+  MPI_Wtime                    wall-clock time in seconds.
+  MPI_File_open/close          open the graph file once for all processes (collective).
+  MPI_File_read_at             each process reads its own slice of the file (parallel I/O).
+  MPI_File_write_at_all        collective write of each process's part of the final ranks.
+  MPI_File_delete              remove an old output file before writing.
+  MPI_Bcast                    rank 0 sends the file header to everyone.
+  MPI_Allgather                share the partition boundaries.
+  MPI_Alltoall                 setup: how many ghost values each pair of processes exchanges.
+  MPI_Alltoallv                setup: WHICH ids; then every iteration: the ghost VALUES.
+  MPI_Allgatherv (MPI_IN_PLACE) allgather mode: everyone gets the full contribution vector.
+  MPI_Ialltoallv               overlap mode: non-blocking exchange.
+  MPI_Test / MPI_Wait          drive / finish the non-blocking exchange.
+  MPI_Allreduce (MPI_SUM)      every iteration: total residual + dangling mass (2 numbers in
+                               ONE call - fusing them halves the number of synchronisations).
+  MPI_Gather                   collect top-k candidates and per-process statistics on rank 0.
+  MPI_Reduce                   sum of all ranks on rank 0 (sanity check, must be 1.0).
+  MPI_Abort                    stop all processes if one hits an error.
+
+
+=====================================================================================
+PART 9.  EXPERIMENTS AND RESULTS (and the reasons behind them)
+=====================================================================================
+
+9.1 Setup: i5-1145G7 (4 cores, 8 hyper-threads, 8 MB L3), 16 GB RAM (7.6 GB for WSL2),
+    Ubuntu 24.04 on WSL2, Open MPI 4.1.6, g++ 13.3 -O3 -march=native. P = 1,2,3,4,6,8.
+    3 repeats per configuration, the MEDIAN is reported. Laptop on AC power, standby blocked.
+
+9.2 Strong scaling (best strategy, edge partition)
+        P:              1      2      3      4      6      8
+        rmat-22       1.00   2.87   3.82   4.00   4.11   3.82
+        web-BerkStan  0.99   1.51   1.66   1.79   1.91   1.67
+        soc-LiveJ.    1.00   1.36   1.26   1.29   1.30   1.31
+        web-Google    0.94   1.10   1.05   1.17   1.31   1.33
+
+9.3 Communication strategies (speedup at P = 4)
+        graph          allgather  alltoallv  overlap
+        web-Google       0.95       1.17      1.07
+        web-BerkStan     1.46       1.79      1.46
+        soc-LiveJ.       1.12       1.15      1.29
+        rmat-22          2.35       3.07      4.00
+    Data per iteration at P=8: allgather 49 / 38 / 271 / 235 MB vs alltoallv 8.7 / 4.0 /
+    96.8 / 53.9 MB (Google / BerkStan / LiveJournal / rmat-22) = 64-90% less.
+
+9.4 Load balance (P = 8, imbalance = slowest/average compute)
+        LiveJournal: vertex partition 2.12 (and SLOWER than sequential, 0.93x),
+                     edge partition 1.05 (1.25x).   Edge partitioning is essential.
+
+9.5 The hardware ceiling (platform probe, speedup over 1 process)
+        P:            1     2     3     4     6     8
+        arithmetic   1.00  2.04  3.07  3.89  4.97  6.33   -> cores work fine
+        random read  1.00  1.83  2.23  2.84  3.01  3.36   -> partly limited
+        streaming    1.00  1.03  1.05  1.07  1.09  1.01   -> NO scaling: memory bus is full
+    One core already streams ~13 GB/s, the whole bandwidth available. PageRank must stream
+    the edge list every iteration and read neighbours at random, so its speedup lands
+    between the "streaming" and "random read" lines. LiveJournal sits near the bottom line,
+    rmat-22 near the random-read line (plus the cache-blocking bonus).
+
+9.6 Why rmat-22 scales 4x but LiveJournal only 1.3x (same size, ~65-68 M edges):
+    * rmat-22 has random node labels -> almost every read misses the cache. One process
+      moves only ~4.4 GB/s (it waits on latency), leaving bandwidth unused; more processes
+      use it -> 3-4x.
+    * LiveJournal keeps the crawl order: neighbours have nearby ids, many reads hit the
+      cache, one process already runs 3.9x more edges/second than rmat-22 and nearly fills
+      the memory bandwidth -> little left to gain.
+
+9.7 Weak scaling (rmat-20 on 1 process ... rmat-23 on 8 processes, ~16 M edges each):
+    efficiency 100% -> 44% -> 23% -> 11%. On ONE computer, adding processes does not add
+    memory bandwidth, so a bigger graph simply takes longer. Weak scaling needs a cluster
+    where every new process brings its own memory.
+
+9.8 Other findings
+    * Hyper-threads (P=6,8) help arithmetic (6.3x) but not PageRank.
+    * Partition calibration: vertex weight w=4 cut web-Google imbalance 1.61 -> 1.20.
+    * Degree reordering: sequential web-Google 12% faster, but 4-process web-Google 23%
+      slower and LiveJournal 44% slower -> we kept the natural order.
+    * Convergence: 104/106 iterations (web graphs), 90 (LiveJournal), 26 (rmat-22).
+    * Validity notes: absolute times include a 4-6% WSL clock drift after the laptop slept
+      (speedup ratios affected <= ~1%); battery power makes runs 45-80% slower, so all
+      final results were measured on AC power in one sweep.
+
+
+=====================================================================================
+PART 10.  HOW TO RUN IT  (step by step, timings, and what happens if you stop it)
+=====================================================================================
+
+10.1 OPEN THE UBUNTU TERMINAL
+  Start menu -> type "Ubuntu-24.04" -> open it.   (Or in PowerShell:  wsl -d Ubuntu-24.04)
+  You are logged in as user "pdc". Go to the project:
+      cd /mnt/c/Users/DELL/Desktop/pdc-project
+  (Optional) activate Python:   source ~/.venvs/pdc/bin/activate
+
+10.2 THINGS YOU CAN RUN, FROM FASTEST TO SLOWEST
+  ------------------------------------------------------------------------------------
+  Command                                   Time       What it does / touches results?
+  ------------------------------------------------------------------------------------
+  make                                      ~30 s      compiles the 6 programs (no)
+  bash scripts/demo.sh                      ~1 min     viva demo on web-Google (no)
+  bash scripts/demo.sh soc-LiveJournal1     ~2 min     same demo on the big graph (no)
+  make test                                 ~3 min     the 226 correctness checks (no)
+  ./build/pagerank_seq --graph ~/pdc-data/web-Google.bin         ~2 s     one run (no)
+  mpirun -np 4 ./build/pagerank_mpi --graph ~/pdc-data/web-Google.bin --mode alltoallv
+                                            ~2 s       one parallel run (no)
+  bash scripts/probe_platform.sh            ~3 min     hardware probe (rewrites platform.csv)
+  bash scripts/calibrate_partition.sh       ~3 min     calibration (rewrites calibration.csv)
+  RESULTS_DIR=results-check bash scripts/run_all.sh
+                                            ~80 min    FULL fresh re-run into a NEW folder
+                                                       (your submitted results untouched)
+  ------------------------------------------------------------------------------------
+  The ~80 min splits roughly: tests 3, web-Google + web-BerkStan 10, LiveJournal 41,
+  rmat-22 20, weak scaling 2, calibration 3, probe 3, plots + dashboard 1.
+
+  Useful options for single runs:
+    --mode allgather|alltoallv|overlap   --partition vertex|edge   --topk 10
+    --tol 1e-9   --iters 30 (fixed count)   --verbose (prints residual every iteration)
+    --out ranks.f64 (all ranks)   --json run.json (summary)
+  Example to watch convergence:
+    mpirun -np 4 ./build/pagerank_mpi --graph ~/pdc-data/web-Google.bin --verbose
+
+10.3 THE RECOMMENDED WAY TO RE-CHECK EVERYTHING YOURSELF
+      cd /mnt/c/Users/DELL/Desktop/pdc-project
+      RESULTS_DIR=results-check bash scripts/run_all.sh
+  * Plug in the charger and keep the lid open (battery = 45-80% slower, sleep = paused).
+  * Output goes to results-check/ including results-check/dashboard.html.
+    Open it from Windows: C:\Users\DELL\Desktop\pdc-project\results-check\dashboard.html
+  * Your submitted results/ and dashboard/index.html are NOT touched.
+
+10.4 IF YOU INTERRUPT IT (Ctrl+C, closing the window, laptop sleeping)
+  * dashboard/index.html is NOT deleted. It is only rewritten in the very LAST step, and
+    the new file replaces the old one in a single step only when it is complete. If you
+    stop earlier, the old dashboard stays exactly as it was. With RESULTS_DIR set, the
+    original dashboard is never touched at all.
+  * Benchmarks are RESUMABLE: every finished run is saved immediately as its own JSON
+    file. Run the same command again and it skips everything already done and continues.
+  * calibration.csv, platform.csv, reorder.csv, tests.log are written to a temporary file
+    and moved into place only when complete, so a stop never leaves half-written files.
+  * The only thing lost is the run that was in progress at that moment.
+  * If the laptop SLEPT in the middle of a run, that one run's time may be wrong. Delete
+    that JSON (results-check/runs/<graph>/<name>.json) and run the command again.
+  * Note: running plain  bash scripts/run_all.sh  (without RESULTS_DIR) in this folder
+    would skip all benchmark runs (they already exist), but it WOULD re-measure the
+    calibration and the platform probe and rebuild the plots and dashboard. Use
+    RESULTS_DIR for experiments, and keep results/ as the official results.
+  * To force re-measuring something:  python scripts/bench.py --datasets web-Google --force
+
+10.5 VIEWING THE RESULTS
+  * Dashboard: double-click dashboard\index.html in Windows Explorer (any browser).
+    Use the "Graph" and "Partition" buttons at the top; hover over charts for values.
+    Works offline too (a local copy of the chart library is in dashboard\vendor\).
+  * Charts for slides: results\plots\*.png
+  * Raw numbers: results\summary.csv (opens in Excel).
+  * Report: the Claude Doc link at the top (export to PDF/Word from its menu).
+
+10.6 SETTING IT UP ON A NEW COMPUTER FROM ZERO (about 30 minutes + downloads)
+  1. PowerShell (admin):   wsl --install -d Ubuntu-24.04      (5-10 min, restart if asked)
+     Open Ubuntu, create a user name and password.
+  2. Copy the project folder, then in Ubuntu:
+       cd /mnt/c/Users/<you>/Desktop/pdc-project
+       bash scripts/setup_wsl.sh          (5 min: g++, Open MPI, Python packages)
+  3. make && make test                     (3-4 min, expect "passed: 226 failed: 0")
+  4. bash scripts/download_datasets.sh     (3-10 min, ~300 MB)
+     bash scripts/prepare_datasets.sh      (3 min)
+  5. bash scripts/demo.sh                  (1 min) or the full run (10.3).
+  On a Linux lab machine or cluster skip step 1; for several machines add
+  "--hostfile hosts.txt" to mpirun.
+
+10.7 TROUBLESHOOTING
+  "mpirun: There are not enough slots"  -> use -np 4 or less, or add --oversubscribe.
+  "graph ... not found"                 -> run download_datasets.sh + prepare_datasets.sh.
+  "cannot run as root"                  -> you are root; open Ubuntu normally (user pdc).
+  Times much slower than in the report  -> laptop on battery / power-saving mode.
+  Dashboard charts empty                -> run build_dashboard.py; check results/summary.csv.
+  "sudo" asks for a password            -> user pdc has no password yet; set one from
+                                           PowerShell: wsl -d Ubuntu-24.04 -u root passwd pdc
+
+
+=====================================================================================
+PART 11.  PLAN vs WHAT WAS DONE
+=====================================================================================
+
+  Planned item                                   Status
+  0 Environment (WSL Ubuntu + Open MPI)          DONE (installed and configured)
+  1 Repository layout, Makefile, README          DONE
+  2 Binary CSR format, convert, gen_rmat         DONE
+  3 PageRank formulation (damping, dangling)     DONE
+  4 Sequential version                           DONE
+  5 MPI: 2 partitioners, 3 strategies, MPI-IO,   DONE (+ calibrated vertex weight w = 4)
+    fused allreduce, distributed top-k
+  6 Correctness tests                            DONE (226/226 pass)
+  7 Benchmarks: strong + weak scaling            DONE (456 runs)
+  8 Plots                                        DONE (10 PNG charts)
+  9 Interactive dashboard                        DONE (local file + online link)
+  10 Written report                              DONE (Claude Doc, 10 sections + appendix)
+
+  Extras not in the plan: platform probe (hardware ceiling), degree-reordering experiment,
+  partition calibration, viva demo script, resumable/interrupt-safe pipeline, this guide.
+
+  Deviations from the plan (and why):
+  * Data came from the KONECT mirror: snap.stanford.edu is blocked on this network.
+    Same graphs, but KONECT renumbers nodes (reported ids are KONECT ids).
+  * 3 repeats per configuration instead of 5, to keep the full run near 80 minutes.
+  * R-MAT scales 20-23 instead of 20-24: generating scale 24 (268 million edges) needs
+    several GB of memory, too close to the 7.6 GB available to the WSL2 VM.
+
+  Open item for you: the report has one comment asking whether your course wants a
+  "who did what" contribution table. Reply there with the split if needed.
+
+
+=====================================================================================
+PART 12.  LIKELY VIVA QUESTIONS AND ANSWERS
+=====================================================================================
+
+Q: What is PageRank in one sentence?
+A: The long-run probability that a random surfer, who follows links 85% of the time and
+   jumps to a random page 15% of the time, is on a given page.
+
+Q: Why the damping factor 0.85?
+A: It is the standard value from the original paper. It guarantees convergence (the jump
+   makes the process mix), and the error shrinks by about this factor or faster each
+   iteration.
+
+Q: What are dangling nodes and how do you handle them?
+A: Nodes with no out-links. Their rank would leak out of the system, so we add their total
+   rank D equally to all N nodes each iteration. Ranks then always sum to 1, the same as
+   networkx.
+
+Q: How do you know your answer is correct?
+A: 226 automated tests: equal to networkx (L1 7e-12), every MPI configuration equal to the
+   sequential program (1e-13), exact known answers (4-cycle -> 0.25 each), and the same
+   convergence iteration. Every run also checks the ranks sum to 1.
+
+Q: Why the pull model and CSR of in-edges?
+A: Each node's new rank is written by exactly one process, with no locks or atomics. CSR
+   stores the edges compactly (4 bytes per edge) and lets each process read just its rows.
+
+Q: How do you partition the graph?
+A: 1D contiguous blocks of nodes. Vertex-balanced = equal node counts. Edge-balanced (our
+   default) = equal (in-edges + 4 x nodes), found by binary search over the offset array.
+   Edge-balanced reduced LiveJournal's imbalance from 2.12 to 1.05.
+
+Q: Why w = 4?
+A: We measured it (calibrate_partition.sh): work per node (computing its contribution,
+   writing its rank, residual) costs roughly four edge-reads. w = 3-6 all performed similarly.
+
+Q: What are ghost nodes?
+A: Nodes owned by another process that are sources of my in-edges. I need their
+   contributions every iteration, so I keep a local copy that is refreshed by the exchange.
+
+Q: Compare your three communication strategies.
+A: Allgatherv: simple, everyone gets the full vector, O(N) data per process. Alltoallv
+   (ghost exchange): only needed values, 64-90% less data, faster on all graphs.
+   Overlap (Ialltoallv): computes local edges while data moves. Fastest on the two large
+   graphs, mainly because splitting the edges improves cache use.
+
+Q: Why do you use one Allreduce with two numbers?
+A: Both the residual and the dangling mass must be global each iteration. Combining them
+   saves one synchronisation per iteration.
+
+Q: Why is the speedup on LiveJournal only 1.3x? Is your code bad?
+A: No. The platform probe shows that on this laptop, streaming through memory does not get
+   faster with more cores (13 GB/s with 1 core = with 8). PageRank is memory-bound: one add
+   per edge but several bytes moved. LiveJournal already nearly saturates memory with one
+   process. Compute-bound code on the same machine scales 3.9x on 4 cores.
+
+Q: Then why does rmat-22 reach 4x?
+A: Its random labels make every read a cache miss, so one process is limited by memory
+   LATENCY and uses only about a third of the bandwidth. More processes keep more misses in
+   flight and use the spare bandwidth. The overlap split also improves cache use.
+
+Q: How can speedup exceed the ideal (superlinear) at P=2,3 on rmat-22?
+A: A cache effect: with the edges split into local and ghost parts, each pass touches a
+   smaller array that fits the cache better. Each process does less than 1/P of the
+   original memory work.
+
+Q: What is the Karp-Flatt metric and what did it show?
+A: e = (1/S - 1/P)/(1 - 1/P), the measured serial fraction. 0.4-0.8 on the real graphs: far
+   more than our code's real serial part. It points to a shared bottleneck, the memory bus.
+
+Q: Did hyper-threading help?
+A: Not for PageRank (memory already saturated). It did help the pure arithmetic kernel (6.3x
+   at 8 processes).
+
+Q: Why did weak scaling fail?
+A: On one machine more processes do not bring more memory bandwidth, so doubling the graph
+   doubles the time. Weak scaling needs a cluster where each node has its own memory.
+
+Q: What would change on a real cluster?
+A: Each machine adds memory bandwidth, so the main bottleneck disappears. The network is
+   10-100x slower than local memory, so the ghost exchange's 64-90% data saving would
+   matter much more. The same binaries run with mpirun --hostfile.
+
+Q: What is MPI-IO and why use it?
+A: Parallel file access: every process reads only its own slice of the graph file at a
+   computed offset, so no process loads the whole graph and loading scales.
+
+Q: How is the top-10 found without collecting all ranks?
+A: Each process finds its local top-10 with a heap, MPI_Gather sends 10 x P candidates to
+   rank 0, which merges them. The true top-10 must be among them.
+
+Q: How did you make the measurements fair?
+A: Same kernel and edge order in both programs; barriers before timing; one process per
+   physical core (binding); 3 repeats with medians; AC power; laptop kept awake; all
+   configurations of a graph measured in one session.
+
+Q: What problems did you hit?
+A: SNAP blocked (used KONECT mirror); laptop sleeping and battery throttling during the
+   first benchmark run (re-ran everything on AC power); WSL clock drift after sleep
+   (quantified, ratios unaffected); a slow ghost-setup step (3.3 s with sorting, replaced
+   with an O(N+M) marking pass taking 0.35 s).
+
+Q: What would you improve next?
+A: Hybrid MPI + OpenMP, run on a cluster, 2D partitioning for many processes, cache-blocked
+   sequential kernel.
+
+Q: Explain one iteration of your MPI code.
+A: (Use Part 7.) Compute my contributions; pack the values others asked for; Alltoallv
+   exchange; pull over my in-edges to get new ranks; Allreduce residual + dangling mass;
+   stop if residual < 1e-9.
+
+
+=====================================================================================
+PART 13.  GLOSSARY
+=====================================================================================
+  CSR            Compressed Sparse Row: edges stored as one array + start offsets.
+  Collective     MPI operation all processes call together (Bcast, Allreduce, Alltoallv...).
+  Contribution   r[u]/outdeg[u]: what node u passes to each node it links to.
+  Dangling node  Node with no out-links.
+  Ghost node     Remote node whose value a process needs; kept as a local copy.
+  Imbalance      Slowest process time / average process time.
+  Iteration      One full update of all ranks.
+  L1 residual    Sum of absolute changes of all ranks in one iteration.
+  Memory-bound   Speed limited by moving data, not by arithmetic.
+  MTEPS          Million traversed edges per second (edges x iterations / time).
+  MPI            Message Passing Interface, the standard for distributed-memory programs.
+  MPI-IO         MPI's parallel file input/output.
+  Partition      The block of nodes owned by one process.
+  Power iteration Repeating the PageRank update until it stops changing.
+  R-MAT          Recursive-matrix random graph generator with realistic skewed degrees.
+  Rank (MPI)     A process's number (0..P-1). (Not the same as a PageRank score!)
+  Speedup        T_sequential / T_parallel.
+  Efficiency     Speedup / number of processes.
+  WSL2           Windows Subsystem for Linux: a Linux VM inside Windows.
+=====================================================================================

@@ -1,6 +1,7 @@
 """Builds the interactive results dashboard from the benchmark results.
 
   python scripts/build_dashboard.py          -> dashboard/index.html (open in any browser)
+                                                ($RESULTS_DIR/dashboard.html when RESULTS_DIR is set)
   python scripts/build_dashboard.py --fragment out.html
                                              -> page body only (for publishing as an artifact)
 
@@ -11,14 +12,18 @@ import argparse
 import datetime as dt
 import json
 import math
+import os
 import re
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-RESULTS = ROOT / "results"
+RESULTS = Path(os.environ.get("RESULTS_DIR", ROOT / "results")).resolve()
 DASH = ROOT / "dashboard"
+# A run into a separate RESULTS_DIR gets its own dashboard file, so it never
+# overwrites dashboard/index.html.
+OUTPUT = DASH / "index.html" if RESULTS == (ROOT / "results").resolve() else RESULTS / "dashboard.html"
 DATASET_ORDER = ["web-Google", "web-BerkStan", "soc-LiveJournal1", "rmat-22"]
 
 
@@ -112,9 +117,10 @@ def main():
     page = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
             "</head>\n<body>\n" + body + "\n</body>\n</html>\n")
-    out = DASH / "index.html"
-    out.write_text(page, encoding="utf-8")
-    print("wrote", out)
+    tmp = OUTPUT.with_suffix(".tmp")
+    tmp.write_text(page, encoding="utf-8")
+    tmp.replace(OUTPUT)  # atomic: an interrupted build never leaves a half-written page
+    print("wrote", OUTPUT)
 
 
 if __name__ == "__main__":

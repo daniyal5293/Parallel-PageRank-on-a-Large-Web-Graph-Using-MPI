@@ -1,8 +1,9 @@
 """Generates the report figures from results/summary.csv and results/runs/.
 
-  python scripts/plot_results.py     ->  results/plots/*.png
+  python scripts/plot_results.py     ->  results/plots/*.png   (or $RESULTS_DIR/plots/*.png)
 """
 import json
+import os
 from pathlib import Path
 
 import matplotlib
@@ -12,7 +13,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-RESULTS = ROOT / "results"
+RESULTS = Path(os.environ.get("RESULTS_DIR", ROOT / "results")).resolve()
 PLOTS = RESULTS / "plots"
 
 # Validated categorical palette (fixed order, never cycled) and chart chrome.
@@ -27,7 +28,7 @@ plt.rcParams.update({
     "figure.facecolor": SURFACE, "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE,
     "font.family": "sans-serif", "font.sans-serif": ["Segoe UI", "DejaVu Sans", "Arial"],
     "font.size": 10, "text.color": INK, "axes.labelcolor": INK2, "axes.titlecolor": INK,
-    "axes.titlesize": 11, "axes.titleweight": "semibold", "axes.titlelocation": "left",
+    "axes.titlesize": 11, "axes.titleweight": "bold", "axes.titlelocation": "left",
     "axes.edgecolor": AXIS, "axes.linewidth": 1, "axes.spines.top": False, "axes.spines.right": False,
     "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.8, "grid.linestyle": "-",
     "xtick.color": MUTED, "ytick.color": MUTED, "xtick.labelcolor": INK2, "ytick.labelcolor": INK2,

@@ -263,6 +263,10 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
+  // Offline fallback for local viewing (e.g. a viva room without internet): dashboard/vendor/ holds a copy.
+  if (!window.Chart) document.write('<script src="vendor/chart.umd.min.js"><\/script>');
+</script>
+<script>
 const DATA = /*__DATA__*/null;
 
 const MODES = ["allgather", "alltoallv", "overlap"];
