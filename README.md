@@ -1,7 +1,6 @@
 # Parallel PageRank on Large Web Graphs (MPI)
 
-PDC course project by **Daniyal Ahmed Khan (23K-3039), Abdul Hadi (23K-3041), Taha Ali Khan (23K-3005),
-Muhammad Tahseen (23K-3040)**.
+PDC course project by **Daniyal Ahmed Khan, Abdul Hadi, Taha Ali Khan**.
 
 The project has a sequential and a distributed-memory (MPI) PageRank in C++. They run on real web and
 social graphs with up to 4.8 M nodes and 69 M edges, and on synthetic R-MAT graphs. Benchmark scripts
